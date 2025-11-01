@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Picture Hanger Height Helper</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header>
+      <h1>Picture Hanger Height Helper</h1>
+      <p>Calculate the nail height so the center of your frame hangs exactly 5' (60&quot;) from the floor.</p>
+    </header>
+
+    <section class="inputs">
+      <div class="field-group">
+        <h2>Frame dimensions</h2>
+        <div class="field">
+          <label for="frame-feet">Frame height</label>
+          <div class="dimension-input">
+            <input type="number" id="frame-feet" min="0" placeholder="feet" />
+            <span class="unit">ft</span>
+            <input type="number" id="frame-inches" min="0" placeholder="inches" />
+            <span class="unit">in</span>
+          </div>
+          <p class="hint">Enter either or both feet/inches (fractions can be decimals, e.g. 0.5 for 1/2&quot;).</p>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <h2>Anchor position</h2>
+        <div class="field">
+          <label for="anchor-inches">How far is the hanging hardware from the top edge?</label>
+          <div class="dimension-input single">
+            <input type="number" id="anchor-inches" min="0" step="0.0625" placeholder="inches" />
+            <span class="unit">in</span>
+          </div>
+          <p class="hint">Measure straight down from the top of the frame to the anchor point (for sawtooth hangers, use the top of the slot).</p>
+        </div>
+      </div>
+      <button id="calculate">Calculate nail height</button>
+    </section>
+
+    <section class="results" aria-live="polite">
+      <h2>Results</h2>
+      <div id="result-text" class="result-text">Enter your measurements and click calculate.</div>
+
+      <div class="diagram" aria-hidden="true">
+        <div class="wall">
+          <div class="floor-label">Floor</div>
+          <div class="frame" id="frame-visual">
+            <div class="label top" id="top-label"></div>
+            <div class="label center" id="center-label"></div>
+            <div class="label anchor" id="anchor-label"></div>
+            <div class="label bottom" id="bottom-label"></div>
+          </div>
+          <div class="nail" id="nail-mark">
+            <div class="nail-head"></div>
+            <div class="nail-label" id="nail-label"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p class="footnote">Tip: If your anchor point is lower than the frame center, the nail will sit above the frame center.</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
