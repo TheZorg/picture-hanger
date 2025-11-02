@@ -2,7 +2,6 @@ const CENTER_HEIGHT_INCHES = 60; // 5 feet
 
 const frameInchesInput = document.getElementById("frame-inches");
 const anchorInput = document.getElementById("anchor-inches");
-const calculateButton = document.getElementById("calculate");
 const resultText = document.getElementById("result-text");
 const frameVisual = document.getElementById("frame-visual");
 const topLabel = document.getElementById("top-label");
@@ -192,11 +191,11 @@ function handleCalculate() {
   updateDiagram(frameHeight, anchor, nailHeight, topHeight, bottomHeight);
 }
 
-calculateButton.addEventListener("click", handleCalculate);
-
 [frameInchesInput, anchorInput].forEach((input) => {
+  input.addEventListener("input", handleCalculate);
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
+      event.preventDefault();
       handleCalculate();
     }
   });
