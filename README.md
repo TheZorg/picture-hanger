@@ -4,4 +4,4 @@ A tiny static web app that helps you place a nail so the center of your picture 
 
 ## Getting started
 
-Open `index.html` in your browser (or host the repository with GitHub Pages) and enter your frame measurements. Results are displayed in fractional inches for easy marking on the wall.
+Open `index.html` in your browser (or host the repository with GitHub Pages) and enter your frame measurements. Results update instantly and are displayed in fractional inches for easy marking on the wall.
