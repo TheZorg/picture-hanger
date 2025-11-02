@@ -20,18 +20,27 @@ const presetNameInput = document.getElementById("preset-name");
 const presetList = document.getElementById("preset-list");
 const presetEmptyState = document.getElementById("preset-empty");
 const presetNewButton = document.getElementById("preset-new");
+const presetUndoContainer = document.getElementById("preset-undo");
+const presetUndoMessage = document.getElementById("preset-undo-message");
+const presetUndoButton = document.getElementById("preset-undo-button");
 const presetsCard = document.querySelector(".presets-card");
 const themeSelect = document.getElementById("theme-select");
 
 const PRESET_STORAGE_KEY = "picture-hanger-presets";
 const THEME_STORAGE_KEY = "picture-hanger-theme";
 const THEME_OPTIONS = new Set(["light", "dark", "system"]);
+const DELETE_CONFIRM_TIMEOUT_MS = 5000;
+const UNDO_TIMEOUT_MS = 8000;
 const systemColorScheme =
   typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-color-scheme: dark)")
     : null;
 let presets = [];
 let activePresetId = null;
+let pendingDeleteButton = null;
+let pendingDeleteTimer = null;
+let lastDeletedPreset = null;
+let undoTimer = null;
 
 resultValue.classList.add("is-placeholder");
 
@@ -263,6 +272,14 @@ function formatInches(value) {
   return `${output}\"`;
 }
 
+function computeFrameMeasurements(frameHeight, anchor, centerHeight) {
+  const halfHeight = frameHeight / 2;
+  const topHeight = centerHeight + halfHeight;
+  const bottomHeight = centerHeight - halfHeight;
+  const nailHeight = topHeight - anchor;
+  return { topHeight, bottomHeight, nailHeight };
+}
+
 function updateDiagram(frameHeight, anchor, centerHeight, nailHeight, topHeight, bottomHeight) {
   const wallHeightPx = 320;
   const tallestPoint = Math.max(topHeight, nailHeight);
@@ -316,10 +333,11 @@ function handleCalculate() {
     return;
   }
 
-  const halfHeight = frameHeight / 2;
-  const topHeight = centerHeight + halfHeight;
-  const bottomHeight = centerHeight - halfHeight;
-  const nailHeight = topHeight - anchor;
+  const { topHeight, bottomHeight, nailHeight } = computeFrameMeasurements(
+    frameHeight,
+    anchor,
+    centerHeight,
+  );
 
   const formattedNail = formatInches(nailHeight);
   resultValue.textContent = formattedNail;
@@ -348,6 +366,10 @@ if (presetForm && presetNewButton && presetList && presetNameInput && presetEmpt
   initializePresets();
 }
 
+if (presetUndoButton) {
+  presetUndoButton.addEventListener("click", handlePresetUndoClick);
+}
+
 // Provide a friendly default example on load
 frameInchesInput.value = "24";
 anchorInput.value = "2 1/2";
@@ -358,6 +380,7 @@ function initializePresets() {
   presets = loadPresetsFromStorage();
   renderPresets();
   clearPresetForm();
+  clearUndoState();
 }
 
 function loadPresetsFromStorage() {
@@ -454,9 +477,14 @@ function renderPresets() {
 
     const metaSpan = document.createElement("span");
     metaSpan.className = "preset-item-meta";
+    const { nailHeight } = computeFrameMeasurements(
+      preset.frameHeight,
+      preset.anchor,
+      preset.centerHeight,
+    );
     metaSpan.textContent = `Frame ${formatInches(preset.frameHeight)} · Anchor ${formatInches(
       preset.anchor,
-    )} · Center ${formatInches(preset.centerHeight)}`;
+    )} · Center ${formatInches(preset.centerHeight)} · Nail ${formatInches(nailHeight)}`;
 
     mainButton.append(nameSpan, metaSpan);
 
@@ -482,6 +510,7 @@ function renderPresets() {
 
 function handlePresetFormSubmit(event) {
   event.preventDefault();
+  clearPendingDeleteButton();
 
   const name = presetNameInput.value.trim();
   if (name === "") {
@@ -541,27 +570,18 @@ function handlePresetListClick(event) {
   }
 
   const presetId = listItem.dataset.id;
-  const preset = presets.find((entry) => entry.id === presetId);
-  if (!preset) {
+  const presetIndex = presets.findIndex((entry) => entry.id === presetId);
+  if (presetIndex < 0) {
+    return;
+  }
+  const preset = presets[presetIndex];
+
+  if (actionButton.classList.contains("preset-delete-button")) {
+    handlePresetDeleteClick(actionButton, presetIndex);
     return;
   }
 
-  if (actionButton.classList.contains("preset-delete-button")) {
-    const confirmDelete = window.confirm(`Delete the preset "${preset.name}"?`);
-    if (!confirmDelete) {
-      return;
-    }
-    presets = presets.filter((entry) => entry.id !== presetId);
-    if (activePresetId === presetId) {
-      activePresetId = null;
-    }
-    persistPresets();
-    renderPresets();
-    if (presetIdInput.value === presetId) {
-      clearPresetForm();
-    }
-    return;
-  }
+  clearPendingDeleteButton();
 
   loadPresetIntoInputs(preset);
 
@@ -572,7 +592,27 @@ function handlePresetListClick(event) {
   }
 }
 
+function handlePresetDeleteClick(button, presetIndex) {
+  const preset = presets[presetIndex];
+  if (!preset) {
+    return;
+  }
+
+  if (pendingDeleteButton && pendingDeleteButton !== button) {
+    clearPendingDeleteButton();
+  }
+
+  if (pendingDeleteButton !== button) {
+    armDeleteConfirmation(button);
+    return;
+  }
+
+  clearPendingDeleteButton();
+  deletePresetAtIndex(presetIndex);
+}
+
 function handlePresetNewClick() {
+  clearPendingDeleteButton();
   const isEditing = Boolean(presetsCard && presetsCard.classList.contains("is-editing"));
   if (isEditing || presetNameInput.value.trim() !== "") {
     clearPresetForm();
@@ -604,6 +644,7 @@ function clearPresetForm() {
     presetForm.reset();
   }
   setEditingState(false);
+  clearPendingDeleteButton();
   if (presetNameInput) {
     presetNameInput.blur();
   }
@@ -619,6 +660,113 @@ function setEditingState(isEditing) {
   if (!isEditing && presetIdInput) {
     presetIdInput.value = "";
   }
+}
+
+function armDeleteConfirmation(button) {
+  const originalLabel = button.dataset.originalLabel || button.textContent || "Delete";
+  button.dataset.originalLabel = originalLabel;
+  button.textContent = "Are you sure?";
+  button.classList.add("is-confirm");
+  pendingDeleteButton = button;
+  if (pendingDeleteTimer) {
+    clearTimeout(pendingDeleteTimer);
+  }
+  pendingDeleteTimer = window.setTimeout(() => {
+    if (pendingDeleteButton === button) {
+      clearPendingDeleteButton();
+    }
+  }, DELETE_CONFIRM_TIMEOUT_MS);
+}
+
+function clearPendingDeleteButton() {
+  if (pendingDeleteTimer) {
+    clearTimeout(pendingDeleteTimer);
+    pendingDeleteTimer = null;
+  }
+  if (pendingDeleteButton) {
+    const originalLabel = pendingDeleteButton.dataset.originalLabel || "Delete";
+    pendingDeleteButton.textContent = originalLabel;
+    pendingDeleteButton.classList.remove("is-confirm");
+    delete pendingDeleteButton.dataset.originalLabel;
+    pendingDeleteButton = null;
+  }
+}
+
+function deletePresetAtIndex(presetIndex) {
+  const [removedPreset] = presets.splice(presetIndex, 1);
+  if (!removedPreset) {
+    return;
+  }
+
+  const wasActive = activePresetId === removedPreset.id;
+  if (wasActive) {
+    activePresetId = null;
+  }
+
+  lastDeletedPreset = {
+    preset: removedPreset,
+    index: presetIndex,
+    wasActive,
+  };
+
+  persistPresets();
+  renderPresets();
+
+  if (presetIdInput.value === removedPreset.id) {
+    clearPresetForm();
+  }
+
+  showUndoMessage(removedPreset.name);
+}
+
+function showUndoMessage(name) {
+  if (!presetUndoContainer || !presetUndoMessage) {
+    return;
+  }
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+  }
+  presetUndoMessage.textContent = `Deleted "${name}".`;
+  presetUndoContainer.hidden = false;
+  undoTimer = window.setTimeout(() => {
+    clearUndoState();
+  }, UNDO_TIMEOUT_MS);
+}
+
+function clearUndoState() {
+  if (undoTimer) {
+    clearTimeout(undoTimer);
+    undoTimer = null;
+  }
+  lastDeletedPreset = null;
+  if (presetUndoContainer) {
+    presetUndoContainer.hidden = true;
+  }
+  if (presetUndoMessage) {
+    presetUndoMessage.textContent = "";
+  }
+}
+
+function handlePresetUndoClick() {
+  if (!lastDeletedPreset) {
+    clearUndoState();
+    return;
+  }
+
+  clearPendingDeleteButton();
+
+  const { preset, index, wasActive } = lastDeletedPreset;
+  const insertIndex = Math.min(index, presets.length);
+  presets.splice(insertIndex, 0, preset);
+  persistPresets();
+
+  if (wasActive) {
+    loadPresetIntoInputs(preset);
+  } else {
+    renderPresets();
+  }
+
+  clearUndoState();
 }
 
 function generatePresetId() {

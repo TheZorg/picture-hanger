@@ -21,8 +21,8 @@
             <option value="system">System default</option>
           </select>
         </div>
+        <p>Two quick measurements and you'll know exactly where the nail goes.</p>
       </div>
-      <p>Two quick measurements and you'll know exactly where the nail goes.</p>
     </header>
 
     <section class="measurements" aria-labelledby="measurements-title">
@@ -117,6 +117,10 @@
           <p class="preset-form-hint">Saves the current measurements under this name.</p>
         </form>
         <p class="preset-empty" id="preset-empty">No saved measurements yet.</p>
+        <div class="preset-undo" id="preset-undo" hidden>
+          <span id="preset-undo-message"></span>
+          <button type="button" class="preset-undo-button" id="preset-undo-button">Undo</button>
+        </div>
         <ul class="preset-list" id="preset-list" aria-live="polite"></ul>
       </aside>
     </section>
