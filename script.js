@@ -1,7 +1,5 @@
-const FEET_TO_INCHES = 12;
 const CENTER_HEIGHT_INCHES = 60; // 5 feet
 
-const frameFeetInput = document.getElementById("frame-feet");
 const frameInchesInput = document.getElementById("frame-inches");
 const anchorInput = document.getElementById("anchor-inches");
 const calculateButton = document.getElementById("calculate");
@@ -14,19 +12,80 @@ const anchorLabel = document.getElementById("anchor-label");
 const nailMark = document.getElementById("nail-mark");
 const nailLabel = document.getElementById("nail-label");
 
-function parseInputs() {
-  const feet = parseFloat(frameFeetInput.value) || 0;
-  const inches = parseFloat(frameInchesInput.value) || 0;
-  const anchor = parseFloat(anchorInput.value);
+function cleanMeasurementString(raw) {
+  return raw
+    .replace(/["'”″′in]+$/gi, "")
+    .replace(/[,]/g, "")
+    .trim();
+}
 
-  if (Number.isNaN(anchor)) {
-    return { error: "Enter the anchor distance in inches." };
+function parseFractionPart(part) {
+  const match = part.match(/^([+-])?(\d+)\/(\d+)$/);
+  if (!match) {
+    return null;
+  }
+  const sign = match[1] === "-" ? -1 : 1;
+  const numerator = Number(match[2]);
+  const denominator = Number(match[3]);
+  if (denominator === 0) {
+    return NaN;
+  }
+  return sign * (numerator / denominator);
+}
+
+function parseMeasurement(rawValue) {
+  if (!rawValue) {
+    return NaN;
   }
 
-  const frameHeight = feet * FEET_TO_INCHES + inches;
+  const cleaned = cleanMeasurementString(rawValue);
+  if (cleaned === "") {
+    return NaN;
+  }
+
+  const mixedMatch = cleaned.match(/^([+-]?\d+)\s+(\d+\/\d+)$/);
+  if (mixedMatch) {
+    const whole = Number(mixedMatch[1]);
+    const fractionPart = parseFractionPart(mixedMatch[2]);
+    if (Number.isNaN(fractionPart) || fractionPart === null) {
+      return NaN;
+    }
+    const direction = whole < 0 ? -1 : 1;
+    const fractionSign = Math.sign(fractionPart || 1);
+    return whole + direction * Math.abs(fractionPart) * fractionSign;
+  }
+
+  const fractionOnly = parseFractionPart(cleaned);
+  if (fractionOnly !== null) {
+    return fractionOnly;
+  }
+
+  const numeric = Number(cleaned);
+  if (!Number.isNaN(numeric)) {
+    return numeric;
+  }
+
+  return NaN;
+}
+
+function parseInputs() {
+  const frameHeight = parseMeasurement(frameInchesInput.value);
+  const anchor = parseMeasurement(anchorInput.value);
+
+  if (Number.isNaN(frameHeight)) {
+    return {
+      error: "Enter the frame height in inches (you can use decimals or fractions like 30 1/2).",
+    };
+  }
 
   if (frameHeight <= 0) {
     return { error: "Frame height must be greater than zero." };
+  }
+
+  if (Number.isNaN(anchor)) {
+    return {
+      error: "Enter the anchor distance in inches (decimals or fractions are OK).",
+    };
   }
 
   if (anchor < 0) {
@@ -85,14 +144,6 @@ function formatInches(value) {
   return `${output}\"`;
 }
 
-function formatFeetInches(value) {
-  const sign = value < 0 ? "-" : "";
-  const totalInches = Math.abs(value);
-  const feet = Math.floor(totalInches / FEET_TO_INCHES);
-  const inches = totalInches - feet * FEET_TO_INCHES;
-  return `${sign}${feet}' ${formatInches(inches).replace('"', '')}\"`;
-}
-
 function updateDiagram(frameHeight, anchor, nailHeight, topHeight, bottomHeight) {
   const scale = 280 / (CENTER_HEIGHT_INCHES * 2);
   const framePixelHeight = Math.max(frameHeight * scale, 24);
@@ -101,21 +152,21 @@ function updateDiagram(frameHeight, anchor, nailHeight, topHeight, bottomHeight)
 
   frameVisual.style.marginBottom = `${Math.max(bottomHeight * scale, 0)}px`;
 
-  topLabel.textContent = `Top: ${formatInches(topHeight)} (${formatFeetInches(topHeight)})`;
-  bottomLabel.textContent = `Bottom: ${formatInches(bottomHeight)} (${formatFeetInches(bottomHeight)})`;
-  centerLabel.textContent = `Center: ${formatInches(CENTER_HEIGHT_INCHES)} (5' 0\")`;
+  topLabel.textContent = `Top: ${formatInches(topHeight)}`;
+  bottomLabel.textContent = `Bottom: ${formatInches(bottomHeight)}`;
+  centerLabel.textContent = `Center: ${formatInches(CENTER_HEIGHT_INCHES)}`;
 
   const anchorOffsetRatio = anchor / frameHeight;
   anchorLabel.style.display = anchor > 0 ? "block" : "none";
   if (anchor > 0) {
     anchorLabel.style.top = `${anchorOffsetRatio * 100}%`;
     const anchorHeight = topHeight - anchor;
-    anchorLabel.textContent = `Anchor: ${formatInches(anchorHeight)} (${formatFeetInches(anchorHeight)})`;
+    anchorLabel.textContent = `Anchor: ${formatInches(anchorHeight)}`;
   }
 
   nailMark.style.display = "flex";
   nailMark.style.bottom = `${nailHeight * scale}px`;
-  nailLabel.textContent = `Nail: ${formatInches(nailHeight)} (${formatFeetInches(nailHeight)})`;
+  nailLabel.textContent = `Nail: ${formatInches(nailHeight)}`;
 }
 
 function handleCalculate() {
@@ -133,11 +184,9 @@ function handleCalculate() {
   const nailHeight = topHeight - anchor;
 
   const formattedNail = formatInches(nailHeight);
-  const formattedFeet = formatFeetInches(nailHeight);
-
   resultText.innerHTML = `
-    <p><strong>Nail height:</strong> ${formattedNail} (${formattedFeet}) from the floor.</p>
-    <p>The top of the frame will sit at ${formatInches(topHeight)} (${formatFeetInches(topHeight)}), and the bottom will be at ${formatInches(bottomHeight)} (${formatFeetInches(bottomHeight)}).</p>
+    <p><strong>Nail height:</strong> ${formattedNail} from the floor.</p>
+    <p>The top of the frame will sit at ${formatInches(topHeight)}, and the bottom will be at ${formatInches(bottomHeight)}.</p>
   `;
 
   updateDiagram(frameHeight, anchor, nailHeight, topHeight, bottomHeight);
@@ -145,7 +194,7 @@ function handleCalculate() {
 
 calculateButton.addEventListener("click", handleCalculate);
 
-[frameFeetInput, frameInchesInput, anchorInput].forEach((input) => {
+[frameInchesInput, anchorInput].forEach((input) => {
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
       handleCalculate();
@@ -154,7 +203,6 @@ calculateButton.addEventListener("click", handleCalculate);
 });
 
 // Provide a friendly default example on load
-frameFeetInput.value = "2";
-frameInchesInput.value = "0";
-anchorInput.value = "2.5";
+frameInchesInput.value = "24";
+anchorInput.value = "2 1/2";
 handleCalculate();
