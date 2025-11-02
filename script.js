@@ -21,12 +21,98 @@ const presetList = document.getElementById("preset-list");
 const presetEmptyState = document.getElementById("preset-empty");
 const presetNewButton = document.getElementById("preset-new");
 const presetsCard = document.querySelector(".presets-card");
+const themeSelect = document.getElementById("theme-select");
 
 const PRESET_STORAGE_KEY = "picture-hanger-presets";
+const THEME_STORAGE_KEY = "picture-hanger-theme";
+const THEME_OPTIONS = new Set(["light", "dark", "system"]);
+const systemColorScheme =
+  typeof window.matchMedia === "function"
+    ? window.matchMedia("(prefers-color-scheme: dark)")
+    : null;
 let presets = [];
 let activePresetId = null;
 
 resultValue.classList.add("is-placeholder");
+
+initThemeControls();
+
+function initThemeControls() {
+  const storedMode = readStoredThemePreference();
+  const initialMode = storedMode ?? "system";
+  applyThemeMode(initialMode);
+
+  if (themeSelect) {
+    themeSelect.value = initialMode;
+    themeSelect.addEventListener("change", (event) => {
+      const selected = event.target.value;
+      const nextMode = THEME_OPTIONS.has(selected) ? selected : "system";
+      applyThemeMode(nextMode);
+      persistThemePreference(nextMode);
+    });
+  }
+
+  if (systemColorScheme) {
+    const handleSystemChange = () => {
+      if (document.documentElement.dataset.themeMode === "system") {
+        applyThemeMode("system");
+      }
+    };
+
+    if (typeof systemColorScheme.addEventListener === "function") {
+      systemColorScheme.addEventListener("change", handleSystemChange);
+    } else if (typeof systemColorScheme.addListener === "function") {
+      systemColorScheme.addListener(handleSystemChange);
+    }
+  }
+}
+
+function applyThemeMode(mode) {
+  const resolved = resolveThemeMode(mode);
+  const root = document.documentElement;
+  root.dataset.theme = resolved;
+  root.dataset.themeMode = mode;
+
+  if (themeSelect && themeSelect.value !== mode) {
+    themeSelect.value = mode;
+  }
+}
+
+function resolveThemeMode(mode) {
+  if (mode === "dark" || mode === "light") {
+    return mode;
+  }
+
+  if (mode === "system") {
+    if (systemColorScheme && typeof systemColorScheme.matches === "boolean") {
+      return systemColorScheme.matches ? "dark" : "light";
+    }
+    return "light";
+  }
+
+  return "light";
+}
+
+function readStoredThemePreference() {
+  try {
+    const stored = localStorage.getItem(THEME_STORAGE_KEY);
+    if (stored && THEME_OPTIONS.has(stored)) {
+      return stored;
+    }
+  } catch (error) {
+    console.warn("Unable to load theme preference:", error);
+  }
+
+  return null;
+}
+
+function persistThemePreference(mode) {
+  try {
+    localStorage.setItem(THEME_STORAGE_KEY, mode);
+  } catch (error) {
+    console.warn("Unable to save theme preference:", error);
+  }
+}
 
 function cleanMeasurementString(raw) {
   return raw
