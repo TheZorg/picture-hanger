@@ -1,70 +1,133 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Picture Hanger Height Helper</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <main class="app">
-    <header>
+    <header class="hero">
       <h1>Picture Hanger Height Helper</h1>
-      <p>Calculate the nail height so the center of your frame hangs exactly 5' (60&quot;) from the floor.</p>
+      <p>Two quick measurements and you'll know exactly where the nail goes.</p>
     </header>
 
-    <section class="inputs">
-      <div class="field-group">
-        <h2>Frame dimensions</h2>
-        <div class="field">
-          <label for="frame-inches">Frame height (inches)</label>
-          <div class="dimension-input single">
-            <input type="text" id="frame-inches" placeholder="e.g. 30 1/2&quot;" />
-            <span class="unit">in</span>
+    <section class="measurements" aria-labelledby="measurements-title">
+      <h2 id="measurements-title" class="sr-only">Measurements</h2>
+      <article class="measurement-card measurement-card--full">
+        <div class="measurement-card-header measurement-card-header--inline">
+          <h3>Target center height</h3>
+          <label class="sr-only" for="center-inches">Target center height in inches</label>
+          <div class="input-shell measurement-input">
+            <input type="text" id="center-inches" inputmode="decimal" placeholder="60" autocomplete="off" />
+            <span class="unit-tag">in</span>
           </div>
-          <p class="hint">Enter the total frame height in inches. Fractions are OK: try <code>30 1/2</code> or <code>45 3/8</code>.</p>
         </div>
-      </div>
+      </article>
 
-      <div class="field-group">
-        <h2>Anchor position</h2>
-        <div class="field">
-          <label for="anchor-inches">How far is the hanging hardware from the top edge?</label>
-          <div class="dimension-input single">
-            <input type="text" id="anchor-inches" placeholder="e.g. 2 1/4" />
-            <span class="unit">in</span>
-          </div>
-          <p class="hint">Measure straight down from the top of the frame to the anchor point (for sawtooth hangers, use the top of the slot).</p>
+      <article class="measurement-card">
+        <div class="measurement-card-header">
+          <h3>Frame height</h3>
         </div>
-      </div>
+        <div class="measurement-figure measurement-figure--frame" aria-hidden="true">
+          <div class="measurement-figure-frame"></div>
+          <div class="measurement-figure-guide measurement-figure-guide--vertical">
+            <span class="guide-cap"></span>
+            <span class="guide-line"></span>
+            <span class="guide-cap"></span>
+          </div>
+        </div>
+        <label class="sr-only" for="frame-inches">Frame height in inches</label>
+        <div class="input-shell measurement-input">
+          <input type="text" id="frame-inches" inputmode="decimal" placeholder="30 1/2" autocomplete="off" />
+          <span class="unit-tag">in</span>
+        </div>
+      </article>
+
+      <article class="measurement-card">
+        <div class="measurement-card-header">
+          <h3>Anchor drop</h3>
+        </div>
+        <div class="measurement-figure measurement-figure--anchor" aria-hidden="true">
+          <div class="measurement-figure-frame measurement-figure-frame--slim"></div>
+          <div class="measurement-anchor-dot"></div>
+          <div class="measurement-figure-guide measurement-figure-guide--anchor">
+            <span class="guide-cap"></span>
+            <span class="guide-line"></span>
+            <span class="guide-cap"></span>
+          </div>
+        </div>
+        <label class="sr-only" for="anchor-inches">Anchor drop in inches</label>
+        <div class="input-shell measurement-input">
+          <input type="text" id="anchor-inches" inputmode="decimal" placeholder="2 1/4" autocomplete="off" />
+          <span class="unit-tag">in</span>
+        </div>
+      </article>
     </section>
 
-    <section class="results" aria-live="polite">
-      <h2>Results</h2>
-      <div id="result-text" class="result-text">Enter your measurements to see the nail height instantly.</div>
+    <section class="output-grid">
+      <div class="result-panel" aria-live="polite">
+        <div class="result-label">Nail height</div>
+        <div id="result-primary" class="result-value">Enter your measurements</div>
+        <p id="result-secondary" class="result-secondary">
+          We'll show the top and bottom of the frame once you add your numbers.
+        </p>
+      </div>
 
-      <div class="diagram" aria-hidden="true">
-        <div class="wall">
-          <div class="floor-label">Floor</div>
-          <div class="frame" id="frame-visual">
-            <div class="label top" id="top-label"></div>
-            <div class="label center" id="center-label"></div>
-            <div class="label anchor" id="anchor-label"></div>
-            <div class="label bottom" id="bottom-label"></div>
-          </div>
-          <div class="nail" id="nail-mark">
-            <div class="nail-head"></div>
-            <div class="nail-label" id="nail-label"></div>
+      <div class="diagram-card">
+        <div class="diagram-header">
+          <span>Preview</span>
+        </div>
+        <div class="diagram" aria-hidden="true">
+          <div class="wall">
+            <div class="floor-label">Floor</div>
+            <div class="nail-wire" id="nail-wire"></div>
+            <div class="frame" id="frame-visual">
+              <div class="label top" id="top-label"></div>
+              <div class="label center" id="center-label"></div>
+              <div class="label anchor" id="anchor-label"></div>
+              <div class="label bottom" id="bottom-label"></div>
+            </div>
+            <div class="nail" id="nail-mark">
+              <div class="nail-visual">
+                <div class="nail-head"></div>
+                <div class="nail-stem"></div>
+              </div>
+              <div class="nail-label" id="nail-label"></div>
+            </div>
           </div>
         </div>
       </div>
+
+      <aside class="presets-card" aria-labelledby="presets-title">
+        <div class="presets-header">
+          <h3 id="presets-title">Saved measurements</h3>
+          <button type="button" class="preset-new-button" id="preset-new">New</button>
+        </div>
+        <form id="preset-form" class="preset-form">
+          <input type="hidden" id="preset-id" />
+          <label class="preset-label" for="preset-name">Name</label>
+          <div class="preset-form-row">
+            <input type="text" id="preset-name" name="preset-name" autocomplete="off" placeholder="Gallery wall"
+              required />
+            <button type="submit" class="preset-save-button" id="preset-save">Save</button>
+          </div>
+          <p class="preset-form-hint">Saves the current measurements under this name.</p>
+        </form>
+        <p class="preset-empty" id="preset-empty">No saved measurements yet.</p>
+        <ul class="preset-list" id="preset-list" aria-live="polite"></ul>
+      </aside>
     </section>
   </main>
 
   <footer>
-    <p class="footnote">Tip: If your anchor point is lower than the frame center, the nail will sit above the frame center.</p>
+    <p class="footnote">Tip: if the hanger sits below the center, the nail rides higher than the frame midpoint.</p>
   </footer>
 
   <script src="script.js"></script>
 </body>
+
 </html>
