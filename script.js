@@ -217,10 +217,10 @@ function updateDiagram(frameHeight, anchor, centerHeight, nailHeight, topHeight,
 function handleCalculate() {
   const { error, frameHeight, anchor, centerHeight } = parseInputs();
   if (error) {
-    resultValue.textContent = "Invalid input";
+    resultValue.textContent = error;
     resultValue.classList.add("is-error");
     resultValue.classList.remove("is-placeholder");
-    resultSecondary.textContent = error;
+    resultSecondary.textContent = defaultSecondaryMessage;
     frameVisual.style.display = "none";
     nailMark.style.display = "none";
     if (nailWire) {

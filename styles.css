@@ -8,6 +8,12 @@
   --accent-soft: rgba(31, 110, 245, 0.12);
   --muted: #5f6f88;
   --border: #d4ddee;
+  --measure-frame-rgb: 31, 110, 245;
+  --measure-center-rgb: 122, 92, 250;
+  --measure-anchor-rgb: 242, 95, 92;
+  --measure-frame: rgb(var(--measure-frame-rgb));
+  --measure-center: rgb(var(--measure-center-rgb));
+  --measure-anchor: rgb(var(--measure-anchor-rgb));
   font-family: "Inter", "Segoe UI", system-ui, sans-serif;
 }
 
@@ -58,7 +64,7 @@ main.app {
 .measurements {
   margin-top: 2.75rem;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   gap: 1.75rem;
 }
 
@@ -115,9 +121,502 @@ main.app {
   font-size: 1.35rem;
 }
 
-.measurement-figure {
+.measurement-card--schematic {
+  grid-column: 1 / -1;
+  padding: clamp(2rem, 4vw, 2.85rem) clamp(1.8rem, 4.5vw, 3rem) clamp(3rem, 8vw, 4.1rem);
+  gap: clamp(1.2rem, 2.4vw, 1.9rem);
+}
+
+.measurement-card--schematic .measurement-card-header {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.measurement-schematic {
   position: relative;
-  height: 160px;
+  border-radius: 24px;
+  background: linear-gradient(150deg, rgba(31, 110, 245, 0.12), rgba(31, 110, 245, 0));
+  padding: clamp(1.6rem, 4vw, 2.4rem) clamp(3rem, 16vw, 6.2rem) clamp(3.4rem, 10vw, 5rem) clamp(1.4rem, 4vw, 2.6rem);
+  overflow: visible;
+  box-shadow: inset 0 0 0 1px rgba(21, 34, 56, 0.04);
+}
+
+.measurement-schematic-stage {
+  position: relative;
+  --schematic-gap: clamp(1.6rem, 4vw, 3rem);
+  display: grid;
+  grid-template-columns: minmax(280px, 360px) minmax(220px, 1fr);
+  column-gap: var(--schematic-gap);
+  row-gap: clamp(1.2rem, 3vw, 2rem);
+  align-items: center;
+  justify-content: center;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: clamp(1.6rem, 4vw, 2.2rem) clamp(1.4rem, 5vw, 2.2rem) clamp(2.1rem, 6vw, 3rem);
+}
+
+.measurement-schematic-figure {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  height: clamp(300px, 46vw, 360px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: clamp(1.1rem, 2.6vw, 1.8rem);
+  margin: 0 auto;
+}
+
+.schematic-wall {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 300px;
+  border-left: 3px solid #c1cddc;
+  border-bottom: 3px solid #c1cddc;
+  border-radius: 0 0 0 18px;
+  background: linear-gradient(0deg, rgba(193, 205, 220, 0.12), transparent);
+  --anchor-ratio: 0.28;
+}
+
+.schematic-floor-label {
+  position: absolute;
+  left: -2px;
+  bottom: -1.3rem;
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.schematic-frame {
+  position: absolute;
+  left: 50%;
+  top: 14%;
+  bottom: 22%;
+  width: 62%;
+  transform: translateX(-50%);
+  border: 4px solid rgba(21, 34, 56, 0.32);
+  border-radius: 12px;
+  background: rgba(148, 167, 194, 0.2);
+  --anchor-ratio: 0.28;
+  --frame-top-offset: 14%;
+  --frame-bottom-offset: 22%;
+}
+
+.schematic-callouts {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: clamp(1rem, 3vw, 1.6rem);
+  height: clamp(300px, 46vw, 360px);
+}
+
+.schematic-anchor-dot {
+  position: absolute;
+  top: calc(var(--anchor-ratio, 0.28) * 100%);
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--measure-anchor);
+  box-shadow: 0 6px 14px rgba(var(--measure-anchor-rgb), 0.28);
+  display: none;
+}
+
+.schematic-frame.has-anchor .schematic-anchor-dot {
+  display: block;
+}
+
+.schematic-label {
+  position: absolute;
+  right: 100%;
+  margin-right: 0.75rem;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px rgba(21, 34, 56, 0.12);
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.schematic-label::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: calc(-0.75rem - 12px);
+  width: 12px;
+  height: 2px;
+  border-radius: 999px;
+  background: rgba(95, 111, 136, 0.35);
+  transform: translateY(-50%);
+}
+
+.schematic-label::after {
+  content: "";
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: rgba(95, 111, 136, 0.8);
+  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.7);
+}
+
+.schematic-measure {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  color: var(--accent);
+}
+
+.schematic-measure .schematic-line {
+  flex: 1;
+  width: 2px;
+  min-height: 40px;
+  border-radius: 999px;
+  background: currentColor;
+  margin: 0.4rem 0;
+}
+
+.schematic-measure--frame {
+  color: var(--measure-frame);
+  top: 14%;
+  bottom: 22%;
+  right: 14%;
+}
+
+.schematic-measure--anchor {
+  color: var(--measure-anchor);
+  top: 14%;
+  height: calc((100% - 14% - 22%) * var(--anchor-ratio, 0.28));
+  right: 31%;
+  display: none;
+}
+
+.schematic-measure--anchor .schematic-line {
+  min-height: 28px;
+  margin: 0.3rem 0;
+}
+
+.schematic-wall.has-anchor .schematic-measure--anchor {
+  display: flex;
+}
+
+.schematic-measure--center {
+  color: var(--measure-center);
+  bottom: 0;
+  height: 58%;
+  left: -24px;
+}
+
+.schematic-label--top {
+  top: 0;
+  transform: translate(-0.1rem, -50%);
+  color: rgba(var(--measure-frame-rgb), 0.9);
+}
+
+.schematic-label--top::after {
+  background: rgba(var(--measure-frame-rgb), 0.9);
+}
+
+.schematic-label--top::before {
+  background: rgba(var(--measure-frame-rgb), 0.45);
+}
+
+.schematic-label--center {
+  top: 50%;
+  color: rgba(var(--measure-center-rgb), 0.92);
+}
+
+.schematic-label--center::after {
+  background: rgba(var(--measure-center-rgb), 0.92);
+}
+
+.schematic-label--center::before {
+  background: rgba(var(--measure-center-rgb), 0.45);
+}
+
+.schematic-label--anchor {
+  top: calc(var(--anchor-ratio, 0.28) * 100%);
+  right: auto;
+  left: calc(100% + 0.75rem);
+  margin-right: 0;
+  margin-left: 0.75rem;
+  transform: translate(0, -50%);
+  color: rgba(var(--measure-anchor-rgb), 0.9);
+  display: none;
+}
+
+.schematic-label--anchor::after {
+  background: rgba(var(--measure-anchor-rgb), 0.9);
+}
+
+.schematic-label--anchor::before {
+  right: auto;
+  left: calc(-0.75rem - 12px);
+  background: rgba(var(--measure-anchor-rgb), 0.55);
+}
+
+.schematic-frame.has-anchor .schematic-label--anchor {
+  display: inline-flex;
+}
+
+.schematic-label--bottom {
+  bottom: 0;
+  transform: translate(-0.1rem, 50%);
+  color: rgba(var(--measure-frame-rgb), 0.9);
+}
+
+.schematic-label--bottom::after {
+  background: rgba(var(--measure-frame-rgb), 0.9);
+}
+
+.schematic-label--bottom::before {
+  background: rgba(var(--measure-frame-rgb), 0.45);
+}
+
+.schematic-cap {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  background: #ffffff;
+}
+
+.schematic-callout {
+  --pointer-offset: 50%;
+  --pointer-gap: clamp(0.45rem, 1vw, 0.75rem);
+  --pointer-length: calc(var(--schematic-gap, 2rem) + clamp(0.6rem, 1.6vw, 1.1rem));
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 0.9rem 1rem 1.05rem;
+  box-shadow: 0 20px 36px rgba(21, 34, 56, 0.12);
+  width: min(100%, 260px);
+}
+
+.schematic-callout::before {
+  content: "";
+  position: absolute;
+  top: var(--pointer-offset);
+  transform: translateY(-50%);
+  pointer-events: none;
+  right: 100%;
+  width: var(--pointer-length);
+  height: 2px;
+  margin-right: var(--pointer-gap);
+  background: linear-gradient(90deg, rgba(31, 110, 245, 0.75), rgba(31, 110, 245, 0));
+}
+
+.schematic-callout::after {
+  content: "";
+  position: absolute;
+  top: var(--pointer-offset);
+  transform: translateY(-50%);
+  pointer-events: none;
+  right: calc(100% + var(--pointer-length) + var(--pointer-gap));
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgba(31, 110, 245, 0.75);
+  box-shadow: 0 4px 12px rgba(31, 110, 245, 0.24);
+}
+
+.schematic-callout label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.schematic-callout label::before {
+  content: "";
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: rgba(31, 110, 245, 0.75);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.6);
+}
+
+.schematic-callout--anchor {
+  --pointer-offset: 28%;
+  border-color: rgba(var(--measure-anchor-rgb), 0.36);
+  background: linear-gradient(180deg, rgba(var(--measure-anchor-rgb), 0.14), rgba(var(--measure-anchor-rgb), 0.06));
+}
+
+.schematic-callout--anchor::before {
+  background: linear-gradient(90deg, rgba(var(--measure-anchor-rgb), 0.75), rgba(var(--measure-anchor-rgb), 0));
+}
+
+.schematic-callout--anchor::after {
+  background: rgba(var(--measure-anchor-rgb), 0.85);
+  box-shadow: 0 4px 12px rgba(var(--measure-anchor-rgb), 0.28);
+}
+
+.schematic-callout--anchor label {
+  color: rgba(var(--measure-anchor-rgb), 0.85);
+}
+
+.schematic-callout--anchor label::before {
+  background: rgba(var(--measure-anchor-rgb), 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
+}
+
+.schematic-callout--anchor .unit-tag {
+  color: rgba(var(--measure-anchor-rgb), 0.75);
+}
+
+.schematic-callout--anchor .input-shell {
+  border-color: rgba(var(--measure-anchor-rgb), 0.22);
+  background: rgba(var(--measure-anchor-rgb), 0.05);
+}
+
+.schematic-callout--anchor .input-shell:focus-within {
+  border-color: rgba(var(--measure-anchor-rgb), 0.55);
+  box-shadow: 0 0 0 3px rgba(var(--measure-anchor-rgb), 0.18);
+}
+
+.schematic-callout--center {
+  --pointer-offset: 72%;
+  border-color: rgba(var(--measure-center-rgb), 0.36);
+  background: linear-gradient(180deg, rgba(var(--measure-center-rgb), 0.14), rgba(var(--measure-center-rgb), 0.06));
+}
+
+.schematic-callout--center::before {
+  background: linear-gradient(90deg, rgba(var(--measure-center-rgb), 0.75), rgba(var(--measure-center-rgb), 0));
+}
+
+.schematic-callout--center::after {
+  background: rgba(var(--measure-center-rgb), 0.85);
+  box-shadow: 0 4px 12px rgba(var(--measure-center-rgb), 0.28);
+}
+
+.schematic-callout--center label {
+  color: rgba(var(--measure-center-rgb), 0.85);
+}
+
+.schematic-callout--center label::before {
+  background: rgba(var(--measure-center-rgb), 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
+}
+
+.schematic-callout--center .unit-tag {
+  color: rgba(var(--measure-center-rgb), 0.75);
+}
+
+.schematic-callout--center .input-shell {
+  border-color: rgba(var(--measure-center-rgb), 0.22);
+  background: rgba(var(--measure-center-rgb), 0.05);
+}
+
+.schematic-callout--center .input-shell:focus-within {
+  border-color: rgba(var(--measure-center-rgb), 0.55);
+  box-shadow: 0 0 0 3px rgba(var(--measure-center-rgb), 0.18);
+}
+
+.schematic-callout--frame {
+  --pointer-offset: 50%;
+  border-color: rgba(var(--measure-frame-rgb), 0.36);
+  background: linear-gradient(180deg, rgba(var(--measure-frame-rgb), 0.14), rgba(var(--measure-frame-rgb), 0.06));
+}
+
+.schematic-callout--frame::before {
+  background: linear-gradient(90deg, rgba(var(--measure-frame-rgb), 0.75), rgba(var(--measure-frame-rgb), 0));
+}
+
+.schematic-callout--frame::after {
+  background: rgba(var(--measure-frame-rgb), 0.85);
+  box-shadow: 0 4px 12px rgba(var(--measure-frame-rgb), 0.28);
+}
+
+.schematic-callout--frame label {
+  color: rgba(var(--measure-frame-rgb), 0.85);
+}
+
+.schematic-callout--frame label::before {
+  background: rgba(var(--measure-frame-rgb), 0.9);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.65);
+}
+
+.schematic-callout--frame .unit-tag {
+  color: rgba(var(--measure-frame-rgb), 0.75);
+}
+
+.schematic-callout--frame .input-shell {
+  border-color: rgba(var(--measure-frame-rgb), 0.22);
+  background: rgba(var(--measure-frame-rgb), 0.05);
+}
+
+.schematic-callout--frame .input-shell:focus-within {
+  border-color: rgba(var(--measure-frame-rgb), 0.55);
+  box-shadow: 0 0 0 3px rgba(var(--measure-frame-rgb), 0.18);
+}
+
+.measurement-input--compact {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 900px) {
+  .measurement-card--schematic {
+    padding: 1.85rem 1.5rem 2.4rem;
+    gap: 1.2rem;
+  }
+
+  .measurement-schematic {
+    padding: 1.45rem 1.35rem 1.85rem;
+  }
+
+  .measurement-schematic-stage {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    gap: 1.5rem;
+    padding: 1.6rem 1rem 2.2rem;
+  }
+
+  .measurement-schematic-figure {
+    width: min(100%, 360px);
+    height: 300px;
+  }
+
+  .schematic-wall {
+    height: 100%;
+  }
+
+  .schematic-callouts {
+    width: 100%;
+    height: auto;
+    gap: 1rem;
+  }
+
+  .schematic-callout {
+    width: 100%;
+  }
+
+  .schematic-callout::before,
+  .schematic-callout::after {
+    display: none;
+  }
+}
+
+.measurement-figure {
+  padding: 20px;
+  position: relative;
   border-radius: 18px;
   background: linear-gradient(150deg, rgba(31, 110, 245, 0.08), rgba(31, 110, 245, 0));
   display: flex;
@@ -127,65 +626,71 @@ main.app {
 }
 
 .measurement-figure-frame {
-  width: 60%;
-  height: 70%;
+  min-width: 220px;
+  height: 110px;
   border-radius: 14px;
   border: 3px solid rgba(21, 34, 56, 0.35);
   background: rgba(148, 167, 194, 0.14);
-}
-
-.measurement-figure-frame--slim {
-  width: 52%;
-  height: 90%;
-  border-radius: 18px;
-}
-
-.measurement-figure-guide {
-  position: absolute;
-  right: 18%;
-  top: 50%;
-  transform: translateY(-50%);
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
-  color: var(--accent);
 }
 
-.measurement-figure-guide--anchor {
-  top: 34%;
-  transform: none;
+.measurement-figure-frame--small {
+  min-width: auto;
+  width: 100px;
+  height: 50px;
+}
+
+.measurement-figure-container {
+  height: 70%;
+  display: flex;
+  justify-content: center;
+}
+
+.measurement-figure-guide {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
   align-items: center;
+  color: var(--accent);
 }
 
 .guide-line {
   width: 2px;
   background: var(--accent);
   flex: 1;
-  min-height: 64px;
   border-radius: 999px;
-}
-
-.measurement-figure-guide--anchor .guide-line {
-  min-height: 44px;
 }
 
 .guide-cap {
   width: 16px;
-  height: 16px;
   border-radius: 999px;
-  border: 2px solid var(--accent);
-  background: #ffffff;
+  border: 1px solid var(--accent);
+}
+
+.measurement-center {
+  height: 100%;
+  padding-top: 25px;
+}
+
+.measurement-wall-container {
+  height: 110px;
+}
+
+.measurement-anchor {
+  display: flex;
+  flex-direction: column;
+  height: 40px;
 }
 
 .measurement-anchor-dot {
-  position: absolute;
-  top: 18%;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   background: var(--accent);
   box-shadow: 0 6px 18px rgba(31, 110, 245, 0.28);
+  flex-shrink: 0;
 }
 
 .input-shell {
@@ -239,10 +744,8 @@ main.app {
 .output-grid {
   margin-top: 3.5rem;
   display: grid;
-  grid-template-columns: minmax(360px, 1.4fr) minmax(280px, 1fr);
-  grid-template-areas:
-    "result result"
-    "preview presets";
+  grid-template-columns: minmax(320px, 1.3fr) minmax(280px, 1fr);
+  grid-template-areas: "result presets";
   gap: 2.5rem;
   align-items: start;
 }
@@ -290,168 +793,6 @@ main.app {
   color: var(--muted);
   max-width: 34rem;
   line-height: 1.55;
-}
-
-.diagram-card {
-  grid-area: preview;
-  background: var(--card);
-  border: 1px solid var(--border);
-  border-radius: 26px;
-  padding: 2.5rem 2.4rem;
-  box-shadow: 0 24px 60px rgba(21, 34, 56, 0.12);
-  display: flex;
-  flex-direction: column;
-  gap: 1.35rem;
-}
-
-.diagram-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-weight: 600;
-  color: var(--muted);
-  text-transform: uppercase;
-  font-size: 0.9rem;
-  letter-spacing: 0.14em;
-  opacity: 0.9;
-}
-
-.diagram {
-  margin-top: 0.5rem;
-  background: linear-gradient(180deg, rgba(31, 110, 245, 0.08), rgba(31, 110, 245, 0));
-  border-radius: 20px;
-  padding: 1.5rem 1.75rem 2.5rem;
-}
-
-.wall {
-  position: relative;
-  height: 360px;
-  border-left: 3px solid #c1cddc;
-  border-bottom: 3px solid #c1cddc;
-  margin: 0 auto;
-  width: min(280px, 80vw);
-  background: linear-gradient(0deg, rgba(193, 205, 220, 0.12), transparent);
-}
-
-.floor-label {
-  position: absolute;
-  left: -2px;
-  bottom: -1.4rem;
-  font-size: 0.85rem;
-  color: var(--muted);
-}
-
-.frame {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 62%;
-  border: 4px solid #94a7c2;
-  border-radius: 10px;
-  background: rgba(148, 167, 194, 0.18);
-  display: none;
-  z-index: 2;
-}
-
-.label {
-  position: absolute;
-  right: calc(100% + 16px);
-  font-size: 0.85rem;
-  color: var(--muted);
-  white-space: nowrap;
-  background: rgba(255, 255, 255, 0.92);
-  padding: 0.15rem 0.6rem;
-  border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(21, 34, 56, 0.12);
-}
-
-.label::before {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 100%;
-  width: 14px;
-  height: 1px;
-  background: rgba(95, 111, 136, 0.6);
-  transform: translateY(-50%);
-}
-
-.label.top {
-  top: 0;
-  transform: translate(0, -50%);
-}
-
-.label.center {
-  top: 50%;
-  transform: translate(0, -50%);
-}
-
-.label.anchor {
-  display: none;
-  transform: translate(0, -50%);
-}
-
-.label.bottom {
-  bottom: 0;
-  transform: translate(0, 50%);
-}
-
-.nail {
-  position: absolute;
-  left: 50%;
-  transform: translate(-50%, -100%);
-  display: none;
-  align-items: center;
-  flex-direction: column;
-  gap: 0;
-  z-index: 3;
-}
-
-.nail-visual {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.35rem;
-}
-
-.nail-head {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #4f5d75;
-  box-shadow: 0 3px 8px rgba(21, 34, 56, 0.3);
-}
-
-.nail-stem {
-  width: 2px;
-  height: 24px;
-  background: linear-gradient(180deg, #4f5d75, rgba(79, 93, 117, 0));
-  border-radius: 999px;
-}
-
-.nail-label {
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  margin-top: 0.5rem;
-  font-size: 0.9rem;
-  color: var(--muted);
-  background: rgba(255, 255, 255, 0.92);
-  padding: 0.2rem 0.65rem;
-  border-radius: 999px;
-  box-shadow: 0 4px 16px rgba(21, 34, 56, 0.12);
-}
-
-.nail-wire {
-  position: absolute;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 2px;
-  background: rgba(79, 93, 117, 0.45);
-  border-radius: 999px;
-  display: none;
-  z-index: 1;
 }
 
 .presets-card {
@@ -688,13 +1029,11 @@ footer {
     grid-template-columns: 1fr;
     grid-template-areas:
       "result"
-      "preview"
       "presets";
     gap: 2rem;
   }
 
-  .result-panel,
-  .diagram-card {
+  .result-panel {
     min-height: auto;
   }
 
@@ -731,16 +1070,7 @@ footer {
     padding: 0.75rem 0.85rem;
   }
 
-  .result-panel,
-  .diagram-card {
+  .result-panel {
     padding: 2rem 1.75rem;
-  }
-
-  .diagram {
-    padding: 1.25rem 1.1rem 2rem;
-  }
-
-  .wall {
-    height: 320px;
   }
 }
