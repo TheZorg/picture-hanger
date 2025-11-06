@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://thezorg.github.io/picture-hanger/sitemap.xml
