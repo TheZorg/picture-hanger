@@ -5,34 +5,22 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Picture Hanger Height Helper</title>
-  <meta
-    name="description"
-    content="Calculate the perfect nail height for your picture frames with this quick hanging calculator."
-  />
+  <meta name="description"
+    content="Calculate the perfect nail height for your picture frames with this quick hanging calculator." />
   <link rel="canonical" href="https://thezorg.github.io/picture-hanger/" />
   <meta property="og:type" content="website" />
   <meta property="og:title" content="Picture Hanger Height Helper" />
-  <meta
-    property="og:description"
-    content="Measure, plug in your numbers, and get the exact nail placement for your next picture hanging project."
-  />
+  <meta property="og:description"
+    content="Measure, plug in your numbers, and get the exact nail placement for your next picture hanging project." />
   <meta property="og:url" content="https://thezorg.github.io/picture-hanger/" />
-  <meta
-    property="og:image"
-    content="https://thezorg.github.io/picture-hanger/assets/og-image.png"
-  />
+  <meta property="og:image" content="https://thezorg.github.io/picture-hanger/assets/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Picture Hanger Height Helper" />
-  <meta
-    name="twitter:description"
-    content="A simple calculator that shows exactly where the nail should go for perfectly hung frames."
-  />
-  <meta
-    name="twitter:image"
-    content="https://thezorg.github.io/picture-hanger/assets/og-image.png"
-  />
+  <meta name="twitter:description"
+    content="A simple calculator that shows exactly where the nail should go for perfectly hung frames." />
+  <meta name="twitter:image" content="https://thezorg.github.io/picture-hanger/assets/og-image.png" />
   <link rel="stylesheet" href="styles.css" />
   <script type="application/ld+json">
     {
@@ -85,13 +73,28 @@
     <header class="hero">
       <div class="hero-header">
         <h1>Picture Hanger Height Helper</h1>
-        <div class="theme-toggle">
-          <label for="theme-select">Theme</label>
-          <select id="theme-select" name="theme-select">
-            <option value="light">Light</option>
-            <option value="dark">Dark</option>
-            <option value="system">System default</option>
-          </select>
+        <div class="hero-tools">
+          <fieldset class="unit-toggle">
+            <legend>Measurement units</legend>
+            <div class="unit-toggle-options">
+              <span class="unit-radio">
+                <input type="radio" id="unit-in" name="unit-system" value="in" checked />
+                <label for="unit-in">Inches</label>
+              </span>
+              <span class="unit-radio">
+                <input type="radio" id="unit-cm" name="unit-system" value="cm" />
+                <label for="unit-cm">Centimeters</label>
+              </span>
+            </div>
+          </fieldset>
+          <div class="theme-toggle">
+            <label for="theme-select">Theme</label>
+            <select id="theme-select" name="theme-select">
+              <option value="light">Light</option>
+              <option value="dark">Dark</option>
+              <option value="system">System default</option>
+            </select>
+          </div>
         </div>
         <p>Two quick measurements and you'll know exactly where the nail goes.</p>
       </div>
@@ -103,7 +106,7 @@
         <div class="measurement-card-header">
           <h3>Target center height</h3>
         </div>
-        <div class="measurement-figure" aria-hidden="true">
+        <div class="measurement-figure" role="img" aria-labelledby="center-diagram-desc">
           <div class="measurement-center">
             <div class="measurement-figure-guide">
               <span class="guide-cap"></span>
@@ -115,10 +118,13 @@
             <div class="measurement-figure-frame measurement-figure-frame--small"></div>
           </div>
         </div>
-        <label class="sr-only" for="center-inches">Target center height in inches</label>
+        <p id="center-diagram-desc" class="sr-only">Diagram showing the wall with the desired artwork center height marked.</p>
+        <label class="sr-only measurement-label" for="center-value">
+          Target center height (<span data-unit-copy data-unit-format="text" data-unit-in="inches" data-unit-cm="centimeters">inches</span>)
+        </label>
         <div class="input-shell measurement-input">
-          <input type="text" id="center-inches" inputmode="decimal" placeholder="60" autocomplete="off" />
-          <span class="unit-tag">in</span>
+          <input type="text" id="center-value" inputmode="decimal" data-placeholder-in="60" data-placeholder-cm="150" placeholder="60" autocomplete="off" />
+          <span class="unit-tag" data-unit-copy data-unit-format="text" data-unit-in="in" data-unit-cm="cm">in</span>
         </div>
       </article>
 
@@ -126,7 +132,7 @@
         <div class="measurement-card-header">
           <h3>Frame height</h3>
         </div>
-        <div class="measurement-figure" aria-hidden="true">
+        <div class="measurement-figure" role="img" aria-labelledby="frame-diagram-desc">
           <div class="measurement-figure-frame"></div>
           <div class="measurement-figure-guide">
             <span class="guide-cap"></span>
@@ -134,10 +140,13 @@
             <span class="guide-cap"></span>
           </div>
         </div>
-        <label class="sr-only" for="frame-inches">Frame height in inches</label>
+        <p id="frame-diagram-desc" class="sr-only">Diagram showing the overall frame height measurement.</p>
+        <label class="sr-only measurement-label" for="frame-value">
+          Frame height (<span data-unit-copy data-unit-format="text" data-unit-in="inches" data-unit-cm="centimeters">inches</span>)
+        </label>
         <div class="input-shell measurement-input">
-          <input type="text" id="frame-inches" inputmode="decimal" placeholder="30 1/2" autocomplete="off" />
-          <span class="unit-tag">in</span>
+          <input type="text" id="frame-value" inputmode="decimal" data-placeholder-in="30 1/2" data-placeholder-cm="60" placeholder="30 1/2" autocomplete="off" />
+          <span class="unit-tag" data-unit-copy data-unit-format="text" data-unit-in="in" data-unit-cm="cm">in</span>
         </div>
       </article>
 
@@ -145,7 +154,7 @@
         <div class="measurement-card-header">
           <h3>Anchor drop</h3>
         </div>
-        <div class="measurement-figure" aria-hidden="true">
+        <div class="measurement-figure" role="img" aria-labelledby="anchor-diagram-desc">
           <div class="measurement-figure-frame">
             <div class="measurement-anchor">
               <div class="measurement-figure-guide">
@@ -157,10 +166,13 @@
             </div>
           </div>
         </div>
-        <label class="sr-only" for="anchor-inches">Anchor drop in inches</label>
+        <p id="anchor-diagram-desc" class="sr-only">Diagram showing the hanger drop distance from the frame top to the nail.</p>
+        <label class="sr-only measurement-label" for="anchor-value">
+          Anchor drop (<span data-unit-copy data-unit-format="text" data-unit-in="inches" data-unit-cm="centimeters">inches</span>)
+        </label>
         <div class="input-shell measurement-input">
-          <input type="text" id="anchor-inches" inputmode="decimal" placeholder="2 1/4" autocomplete="off" />
-          <span class="unit-tag">in</span>
+          <input type="text" id="anchor-value" inputmode="decimal" data-placeholder-in="2 1/4" data-placeholder-cm="5" placeholder="2 1/4" autocomplete="off" />
+          <span class="unit-tag" data-unit-copy data-unit-format="text" data-unit-in="in" data-unit-cm="cm">in</span>
         </div>
       </article>
     </section>
@@ -197,38 +209,36 @@
       </aside>
     </section>
 
-    <section class="seo-content" aria-labelledby="seo-content-title">
-      <details class="seo-details" open>
-        <summary id="seo-content-title">Picture hanging tips and FAQ</summary>
-        <div class="seo-copy">
-          <h2>Dial in consistent artwork placement</h2>
-          <p>
-            The Picture Hanger Height Helper turns three simple measurements into a
-            precise nail location so your frames line up at eye level, across gallery walls,
-            or over furniture without trial and error.
-          </p>
-          <p>
-            Measure the distance from the floor to the frame center you want, the full height of the frame,
-            and how far the hanger sits below the frame top. Enter those values above and the calculator shows
-            the nail height plus the resulting top and bottom of the frame.
-          </p>
+    <section class="faq-section" aria-labelledby="faq-heading">
+      <h2 id="faq-heading">How to use the Frame Hanging Height Calculator</h2>
+      <p>Set your desired center height from the floor, enter your frame height, and add the hanger offset (wire stretch
+        or sawtooth distance from the top). The result is the nail height from the floor.</p>
 
-          <section aria-labelledby="seo-faq-title">
-            <h3 id="seo-faq-title">Frequently asked questions</h3>
-            <dl>
-              <dt>How does the calculator decide where the nail goes?</dt>
-              <dd>
-                It subtracts half of the frame height from your target center height, then adds the hanger drop so the frame
-                rests exactly where you planned.
-              </dd>
-              <dt>Can you show a worked example?</dt>
-              <dd>
-                Sure. Say you want the center of a 24 inch tall frame at 60 inches and the hanger pulls the wire 2 inches below
-                the top. Half the frame height is 12 inches, so the nail should sit at 50 inches (60 - 12 + 2). The frame top will land at 62 inches and the bottom at 38 inches.
-              </dd>
-            </dl>
-          </section>
-        </div>
+      <h3>Worked example</h3>
+      <p data-unit-copy data-unit-format="html"
+        data-unit-in="For a 24×18 in frame with a wire offset of 2 in and a desired center height of 57 in: nail height = 57 + (24 / 2) − 2 = <strong>67 in</strong>."
+        data-unit-cm="For a 60×45 cm frame with a wire offset of 5 cm and a desired center height of 150 cm: nail height = 150 + (60 / 2) − 5 = <strong>175 cm</strong>.">
+        For a 24×18 in frame with a wire offset of 2 in and a desired center height of 57 in: nail height = 57 + (24 /
+        2) − 2 = <strong>67 in</strong>.</p>
+
+      <h3>FAQ</h3>
+      <details class="faq-item">
+        <summary data-unit-copy data-unit-format="text" data-unit-in="What is the 57-inch rule?"
+          data-unit-cm="What is the 145-centimeter rule?">What is the 57-inch rule?</summary>
+        <p data-unit-copy data-unit-format="html"
+          data-unit-in="It’s a common guideline that places the center of artwork around 57 inches from the floor, roughly average eye level. You can pick 57&ndash;60 inches depending on the space."
+          data-unit-cm="It’s a common guideline that places the center of artwork around 145 centimeters from the floor, roughly average eye level. You can pick 145&ndash;152 centimeters depending on the space.">
+          It’s a common guideline that places the center of artwork around 57 inches from the floor, roughly average eye
+          level. You can pick 57–60 inches depending on the space.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Wire vs. sawtooth hangers</summary>
+        <p>Wire hangers have an offset because the wire stretches when hung; sawtooth hangers have a fixed distance from
+          the frame’s top. Use that distance as the offset value.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Metric or imperial units</summary>
+        <p>Use the unit toggle above to switch between inches and centimeters—keep all inputs in the same unit.</p>
       </details>
     </section>
   </main>

@@ -1,8 +1,30 @@
-const DEFAULT_CENTER_HEIGHT_INCHES = 60; // 5 feet
+const UNITS = {
+  INCHES: "in",
+  CENTIMETERS: "cm",
+};
 
-const frameInchesInput = document.getElementById("frame-inches");
-const anchorInput = document.getElementById("anchor-inches");
-const centerInchesInput = document.getElementById("center-inches");
+const UNIT_OPTIONS = new Set([UNITS.INCHES, UNITS.CENTIMETERS]);
+
+const DEFAULT_CENTER_HEIGHT = {
+  [UNITS.INCHES]: 60,
+  [UNITS.CENTIMETERS]: 150,
+};
+
+const DEFAULT_EXAMPLES = {
+  [UNITS.INCHES]: { frame: "24", anchor: "2 1/2", center: "60" },
+  [UNITS.CENTIMETERS]: { frame: "60", anchor: "5", center: "150" },
+};
+
+const UNIT_LABELS = {
+  [UNITS.INCHES]: { short: "in", long: "inches" },
+  [UNITS.CENTIMETERS]: { short: "cm", long: "centimeters" },
+};
+
+const frameInput = document.getElementById("frame-value");
+const anchorInput = document.getElementById("anchor-value");
+const centerInput = document.getElementById("center-value");
+const unitInputs = document.querySelectorAll('input[name="unit-system"]');
+const unitCopyNodes = document.querySelectorAll("[data-unit-copy]");
 const resultValue = document.getElementById("result-primary");
 const resultSecondary = document.getElementById("result-secondary");
 const frameVisual = document.getElementById("frame-visual");
@@ -13,7 +35,6 @@ const anchorLabel = document.getElementById("anchor-label");
 const nailMark = document.getElementById("nail-mark");
 const nailLabel = document.getElementById("nail-label");
 const nailWire = document.getElementById("nail-wire");
-const defaultSecondaryMessage = resultSecondary.textContent;
 const presetForm = document.getElementById("preset-form");
 const presetIdInput = document.getElementById("preset-id");
 const presetNameInput = document.getElementById("preset-name");
@@ -26,11 +47,16 @@ const presetUndoButton = document.getElementById("preset-undo-button");
 const presetsCard = document.querySelector(".presets-card");
 const themeSelect = document.getElementById("theme-select");
 
+const UNIT_STORAGE_KEY = "picture-hanger-unit";
 const PRESET_STORAGE_KEY = "picture-hanger-presets";
 const THEME_STORAGE_KEY = "picture-hanger-theme";
 const THEME_OPTIONS = new Set(["light", "dark", "system"]);
 const DELETE_CONFIRM_TIMEOUT_MS = 5000;
 const UNDO_TIMEOUT_MS = 8000;
+const DEFAULT_SECONDARY_MESSAGES = {
+  [UNITS.INCHES]: "We'll show the top and bottom of the frame once you add your numbers.",
+  [UNITS.CENTIMETERS]: "We'll show the top and bottom of the frame once you add your numbers.",
+};
 const systemColorScheme =
   typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-color-scheme: dark)")
@@ -41,10 +67,13 @@ let pendingDeleteButton = null;
 let pendingDeleteTimer = null;
 let lastDeletedPreset = null;
 let undoTimer = null;
+let currentUnit = UNITS.INCHES;
+let defaultSecondaryMessage = DEFAULT_SECONDARY_MESSAGES[currentUnit];
 
 resultValue.classList.add("is-placeholder");
 
 initThemeControls();
+initUnitControls();
 
 function initThemeControls() {
   const storedMode = readStoredThemePreference();
@@ -123,6 +152,213 @@ function persistThemePreference(mode) {
   }
 }
 
+function initUnitControls() {
+  const storedUnit = readStoredUnitPreference();
+  const initialUnit = storedUnit && UNIT_OPTIONS.has(storedUnit) ? storedUnit : UNITS.INCHES;
+  currentUnit = initialUnit;
+
+  updateUnitRadios(initialUnit);
+  applyUnitCopies(initialUnit);
+  applyInputPlaceholders(initialUnit);
+  applyDefaultExample(initialUnit);
+  defaultSecondaryMessage = DEFAULT_SECONDARY_MESSAGES[initialUnit] ?? defaultSecondaryMessage;
+  if (
+    resultSecondary &&
+    resultValue &&
+    (resultValue.classList.contains("is-placeholder") || resultValue.classList.contains("is-error"))
+  ) {
+    resultSecondary.textContent = defaultSecondaryMessage;
+  }
+
+  unitInputs.forEach((input) => {
+    if (!input) {
+      return;
+    }
+    input.checked = input.value === initialUnit;
+    input.addEventListener("change", (event) => {
+      if (!event.target.checked) {
+        return;
+      }
+      const selected = event.target.value;
+      if (!UNIT_OPTIONS.has(selected)) {
+        return;
+      }
+      changeUnit(selected, { triggeredByUser: true });
+    });
+  });
+}
+
+function changeUnit(nextUnit, { triggeredByUser = false, skipConversion = false } = {}) {
+  if (!UNIT_OPTIONS.has(nextUnit)) {
+    return;
+  }
+
+  if (nextUnit === currentUnit && !skipConversion) {
+    persistUnitPreference(nextUnit);
+    return;
+  }
+
+  const previousUnit = currentUnit;
+  currentUnit = nextUnit;
+
+  updateUnitRadios(nextUnit);
+  applyUnitCopies(nextUnit);
+  applyInputPlaceholders(nextUnit);
+
+  const previousDefaultMessage = defaultSecondaryMessage;
+  defaultSecondaryMessage = DEFAULT_SECONDARY_MESSAGES[nextUnit] ?? defaultSecondaryMessage;
+
+  if (!skipConversion) {
+    const useDefaults = triggeredByUser && inputsMatchDefaultExamples(previousUnit);
+    if (useDefaults) {
+      applyDefaultExample(nextUnit);
+    } else {
+      convertInputValues(previousUnit, nextUnit);
+    }
+  }
+
+  if (
+    resultSecondary &&
+    resultValue &&
+    (resultValue.classList.contains("is-placeholder") || resultValue.classList.contains("is-error"))
+  ) {
+    resultSecondary.textContent = defaultSecondaryMessage;
+  } else if (resultSecondary && resultSecondary.textContent === previousDefaultMessage) {
+    resultSecondary.textContent = defaultSecondaryMessage;
+  }
+
+  persistUnitPreference(nextUnit);
+  handleCalculate();
+  renderPresets();
+}
+
+function applyUnitCopies(unit) {
+  const copyKey = unit === UNITS.CENTIMETERS ? "unitCm" : "unitIn";
+  unitCopyNodes.forEach((node) => {
+    if (!node.dataset[copyKey]) {
+      return;
+    }
+    const format = node.dataset.unitFormat || "text";
+    if (format === "html") {
+      node.innerHTML = node.dataset[copyKey];
+    } else {
+      node.textContent = node.dataset[copyKey];
+    }
+  });
+}
+
+function applyInputPlaceholders(unit) {
+  const placeholderKey = unit === UNITS.CENTIMETERS ? "placeholderCm" : "placeholderIn";
+  [frameInput, anchorInput, centerInput].forEach((input) => {
+    if (!input) {
+      return;
+    }
+    const nextPlaceholder = input.dataset[placeholderKey];
+    if (nextPlaceholder) {
+      input.placeholder = nextPlaceholder;
+    }
+  });
+}
+
+function applyDefaultExample(unit) {
+  const example = DEFAULT_EXAMPLES[unit] ?? DEFAULT_EXAMPLES[UNITS.INCHES];
+  if (frameInput) {
+    frameInput.value = example.frame;
+  }
+  if (anchorInput) {
+    anchorInput.value = example.anchor;
+  }
+  if (centerInput) {
+    centerInput.value = example.center;
+  }
+}
+
+function updateUnitRadios(unit) {
+  unitInputs.forEach((input) => {
+    if (input) {
+      input.checked = input.value === unit;
+    }
+  });
+}
+
+function inputsMatchDefaultExamples(unit) {
+  const example = DEFAULT_EXAMPLES[unit];
+  if (!example) {
+    return false;
+  }
+
+  const frameValue = frameInput ? frameInput.value.trim() : "";
+  const anchorValue = anchorInput ? anchorInput.value.trim() : "";
+  const centerValue = centerInput ? centerInput.value.trim() : "";
+  const centerMatches = centerValue === "" || centerValue === example.center;
+
+  return frameValue === example.frame && anchorValue === example.anchor && centerMatches;
+}
+
+function convertInputValues(fromUnit, toUnit) {
+  if (fromUnit === toUnit) {
+    return;
+  }
+
+  const configs = [
+    { input: frameInput, allowBlank: false },
+    { input: anchorInput, allowBlank: false },
+    { input: centerInput, allowBlank: true },
+  ];
+
+  configs.forEach(({ input, allowBlank }) => {
+    if (!input) {
+      return;
+    }
+    const raw = input.value.trim();
+    if (raw === "") {
+      if (!allowBlank) {
+        input.value = "";
+      }
+      return;
+    }
+    const parsed = parseMeasurement(raw);
+    if (Number.isNaN(parsed)) {
+      return;
+    }
+    const valueInInches = convertToInches(parsed, fromUnit);
+    input.value = formatInputValue(valueInInches, toUnit);
+  });
+}
+
+function formatInputValue(valueInInches, unit) {
+  if (unit === UNITS.CENTIMETERS) {
+    const centimeters = convertFromInches(valueInInches, UNITS.CENTIMETERS);
+    return formatCentimeters(centimeters, { includeUnit: false });
+  }
+  return formatInchesPlain(valueInInches);
+}
+
+function readStoredUnitPreference() {
+  try {
+    return localStorage.getItem(UNIT_STORAGE_KEY) || null;
+  } catch (error) {
+    console.warn("Unable to load unit preference:", error);
+    return null;
+  }
+}
+
+function persistUnitPreference(unit) {
+  try {
+    localStorage.setItem(UNIT_STORAGE_KEY, unit);
+  } catch (error) {
+    console.warn("Unable to save unit preference:", error);
+  }
+}
+
+function getDefaultCenterForUnit(unit) {
+  return DEFAULT_CENTER_HEIGHT[unit] ?? DEFAULT_CENTER_HEIGHT[UNITS.INCHES];
+}
+
+function getUnitLabels(unit) {
+  return UNIT_LABELS[unit] ?? UNIT_LABELS[UNITS.INCHES];
+}
+
 function cleanMeasurementString(raw) {
   return raw
     .replace(/["'”″′in]+$/gi, "")
@@ -180,51 +416,90 @@ function parseMeasurement(rawValue) {
 }
 
 function parseInputs() {
-  const frameHeight = parseMeasurement(frameInchesInput.value);
-  const anchor = parseMeasurement(anchorInput.value);
-  const centerRaw = centerInchesInput.value;
+  const labels = getUnitLabels(currentUnit);
 
-  if (Number.isNaN(frameHeight)) {
+  const frameValue = frameInput ? parseMeasurement(frameInput.value) : NaN;
+  if (Number.isNaN(frameValue)) {
     return {
-      error: "Enter the frame height in inches (you can use decimals or fractions like 30 1/2).",
+      error: `Enter the frame height in ${labels.long} (you can use decimals or fractions like 30 1/2).`,
     };
   }
-
-  if (frameHeight <= 0) {
+  if (frameValue <= 0) {
     return { error: "Frame height must be greater than zero." };
   }
 
-  if (Number.isNaN(anchor)) {
+  const anchorValue = anchorInput ? parseMeasurement(anchorInput.value) : NaN;
+  if (Number.isNaN(anchorValue)) {
     return {
-      error: "Enter the anchor distance in inches (decimals or fractions are OK).",
+      error: `Enter the anchor distance in ${labels.long} (decimals or fractions are OK).`,
     };
   }
-
-  if (anchor < 0) {
+  if (anchorValue < 0) {
     return { error: "Anchor distance can’t be negative." };
   }
-
-  if (anchor > frameHeight) {
+  if (anchorValue > frameValue) {
     return { error: "Anchor distance can’t be greater than the frame height." };
   }
 
-  let centerHeight;
-  if (centerRaw.trim() === "") {
-    centerHeight = DEFAULT_CENTER_HEIGHT_INCHES;
+  const centerRaw = centerInput ? centerInput.value : "";
+  let centerValue;
+  if (!centerRaw || centerRaw.trim() === "") {
+    centerValue = getDefaultCenterForUnit(currentUnit);
   } else {
-    centerHeight = parseMeasurement(centerRaw);
-    if (Number.isNaN(centerHeight)) {
+    centerValue = parseMeasurement(centerRaw);
+    if (Number.isNaN(centerValue)) {
       return {
-        error: "Enter the target center height in inches (decimals or fractions are OK).",
+        error: `Enter the target center height in ${labels.long} (decimals or fractions are OK).`,
       };
     }
   }
 
-  if (centerHeight <= 0) {
+  if (centerValue <= 0) {
     return { error: "Target center height must be greater than zero." };
   }
 
-  return { frameHeight, anchor, centerHeight };
+  const frameHeightInches = convertToInches(frameValue, currentUnit);
+  const anchorInches = convertToInches(anchorValue, currentUnit);
+  const centerHeightInches = convertToInches(centerValue, currentUnit);
+
+  return {
+    frameHeight: frameHeightInches,
+    anchor: anchorInches,
+    centerHeight: centerHeightInches,
+    displayValues: {
+      frame: frameValue,
+      anchor: anchorValue,
+      center: centerValue,
+    },
+  };
+}
+
+function convertToInches(value, unit) {
+  if (unit === UNITS.CENTIMETERS) {
+    return value / 2.54;
+  }
+  return value;
+}
+
+function convertFromInches(value, unit) {
+  if (unit === UNITS.CENTIMETERS) {
+    return value * 2.54;
+  }
+  return value;
+}
+
+function formatCentimeters(value, { includeUnit = true } = {}) {
+  const rounded = Math.round(value * 10) / 10;
+  const formatted = Number.isInteger(rounded) ? `${Math.trunc(rounded)}` : rounded.toFixed(1);
+  return includeUnit ? `${formatted} cm` : formatted;
+}
+
+function formatMeasurement(valueInInches, unit) {
+  if (unit === UNITS.CENTIMETERS) {
+    const centimeters = convertFromInches(valueInInches, UNITS.CENTIMETERS);
+    return formatCentimeters(centimeters, { includeUnit: true });
+  }
+  return `${formatInchesPlain(valueInInches)}"`;
 }
 
 function reduceFraction(numerator, denominator) {
@@ -243,6 +518,10 @@ function reduceFraction(numerator, denominator) {
 }
 
 function formatInches(value) {
+  return `${formatInchesPlain(value)}\"`;
+}
+
+function formatInchesPlain(value) {
   const sign = value < 0 ? "-" : "";
   const inches = Math.abs(value);
   let whole = Math.floor(inches);
@@ -269,7 +548,7 @@ function formatInches(value) {
     output += "0";
   }
 
-  return `${output}\"`;
+  return output;
 }
 
 function computeFrameMeasurements(frameHeight, anchor, centerHeight) {
@@ -280,40 +559,55 @@ function computeFrameMeasurements(frameHeight, anchor, centerHeight) {
   return { topHeight, bottomHeight, nailHeight };
 }
 
-function updateDiagram(frameHeight, anchor, centerHeight, nailHeight, topHeight, bottomHeight) {
+function updateDiagram(
+  frameHeightInches,
+  anchorInches,
+  centerHeightInches,
+  nailHeightInches,
+  topHeightInches,
+  bottomHeightInches,
+  unit,
+) {
+  if (!frameVisual || !topLabel || !bottomLabel || !centerLabel || !anchorLabel || !nailMark || !nailLabel) {
+    return;
+  }
+
   const wallHeightPx = 320;
-  const tallestPoint = Math.max(topHeight, nailHeight);
+  const tallestPoint = Math.max(topHeightInches, nailHeightInches);
   const paddingInches = 8;
   const scale = Math.min((wallHeightPx - 12) / (tallestPoint + paddingInches), 2);
 
-  const framePixelHeight = frameHeight * scale;
-  const bottomPixels = Math.max(bottomHeight * scale, 0);
+  const framePixelHeight = frameHeightInches * scale;
+  const bottomPixels = Math.max(bottomHeightInches * scale, 0);
 
   frameVisual.style.display = "block";
   frameVisual.style.height = `${framePixelHeight}px`;
   frameVisual.style.bottom = `${bottomPixels}px`;
 
-  topLabel.textContent = `Top ${formatInches(topHeight)}`;
-  bottomLabel.textContent = `Bottom ${formatInches(bottomHeight)}`;
-  centerLabel.textContent = `Center ${formatInches(centerHeight)}`;
+  topLabel.textContent = `Top ${formatMeasurement(topHeightInches, unit)}`;
+  bottomLabel.textContent = `Bottom ${formatMeasurement(bottomHeightInches, unit)}`;
+  centerLabel.textContent = `Center ${formatMeasurement(centerHeightInches, unit)}`;
 
-  anchorLabel.style.display = anchor > 0 ? "block" : "none";
-  if (anchor > 0) {
-    const anchorOffsetRatio = Math.min(anchor / frameHeight, 1);
+  const hasAnchor = anchorInches > 0;
+  anchorLabel.style.display = hasAnchor ? "block" : "none";
+  if (hasAnchor) {
+    const anchorOffsetRatio = Math.min(anchorInches / frameHeightInches, 1);
     anchorLabel.style.top = `${anchorOffsetRatio * 100}%`;
-    anchorLabel.textContent = `Drop ${formatInches(anchor)}`;
+    anchorLabel.textContent = `Drop ${formatMeasurement(anchorInches, unit)}`;
   }
 
   nailMark.style.display = "flex";
-  nailMark.style.bottom = `${Math.max(nailHeight * scale, 0)}px`;
-  nailLabel.textContent = `Nail ${formatInches(nailHeight)}`;
+  nailMark.style.bottom = `${Math.max(nailHeightInches * scale, 0)}px`;
+  nailLabel.textContent = `Nail ${formatMeasurement(nailHeightInches, unit)}`;
 
-  if (anchor > 0 && nailWire) {
-    nailWire.style.display = "block";
-    nailWire.style.bottom = `${Math.max(nailHeight * scale, 0)}px`;
-    nailWire.style.height = `${anchor * scale}px`;
-  } else if (nailWire) {
-    nailWire.style.display = "none";
+  if (nailWire) {
+    if (hasAnchor) {
+      nailWire.style.display = "block";
+      nailWire.style.bottom = `${Math.max(nailHeightInches * scale, 0)}px`;
+      nailWire.style.height = `${anchorInches * scale}px`;
+    } else {
+      nailWire.style.display = "none";
+    }
   }
 }
 
@@ -323,13 +617,21 @@ function handleCalculate() {
     resultValue.textContent = error;
     resultValue.classList.add("is-error");
     resultValue.classList.remove("is-placeholder");
-    resultSecondary.textContent = defaultSecondaryMessage;
-    frameVisual.style.display = "none";
-    nailMark.style.display = "none";
+    if (resultSecondary) {
+      resultSecondary.textContent = defaultSecondaryMessage;
+    }
+    if (frameVisual) {
+      frameVisual.style.display = "none";
+    }
+    if (nailMark) {
+      nailMark.style.display = "none";
+    }
     if (nailWire) {
       nailWire.style.display = "none";
     }
-    anchorLabel.style.display = "none";
+    if (anchorLabel) {
+      anchorLabel.style.display = "none";
+    }
     return;
   }
 
@@ -339,17 +641,23 @@ function handleCalculate() {
     centerHeight,
   );
 
-  const formattedNail = formatInches(nailHeight);
+  const formattedNail = formatMeasurement(nailHeight, currentUnit);
   resultValue.textContent = formattedNail;
   resultValue.classList.remove("is-placeholder", "is-error");
-  resultSecondary.innerHTML = `Top edge: <strong>${formatInches(
-    topHeight,
-  )}</strong> &nbsp;·&nbsp; Bottom edge: <strong>${formatInches(bottomHeight)}</strong>`;
+  if (resultSecondary) {
+    resultSecondary.innerHTML = `Top edge: <strong>${formatMeasurement(
+      topHeight,
+      currentUnit,
+    )}</strong> &nbsp;·&nbsp; Bottom edge: <strong>${formatMeasurement(bottomHeight, currentUnit)}</strong>`;
+  }
 
-  updateDiagram(frameHeight, anchor, centerHeight, nailHeight, topHeight, bottomHeight);
+  updateDiagram(frameHeight, anchor, centerHeight, nailHeight, topHeight, bottomHeight, currentUnit);
 }
 
-[frameInchesInput, anchorInput, centerInchesInput].forEach((input) => {
+[frameInput, anchorInput, centerInput].forEach((input) => {
+  if (!input) {
+    return;
+  }
   input.addEventListener("input", handleCalculate);
   input.addEventListener("keydown", (event) => {
     if (event.key === "Enter") {
@@ -370,10 +678,6 @@ if (presetUndoButton) {
   presetUndoButton.addEventListener("click", handlePresetUndoClick);
 }
 
-// Provide a friendly default example on load
-frameInchesInput.value = "24";
-anchorInput.value = "2 1/2";
-centerInchesInput.value = `${DEFAULT_CENTER_HEIGHT_INCHES}`;
 handleCalculate();
 
 function initializePresets() {
@@ -401,9 +705,11 @@ function loadPresetsFromStorage() {
           return null;
         }
 
+        const unit = item.unit && UNIT_OPTIONS.has(item.unit) ? item.unit : UNITS.INCHES;
         const frameHeight = toNumberOrNull(item.frameHeight);
         const anchor = toNumberOrNull(item.anchor);
-        const centerHeight = toNumberOrNull(item.centerHeight ?? DEFAULT_CENTER_HEIGHT_INCHES);
+        const fallbackCenterInches = convertToInches(getDefaultCenterForUnit(unit), unit);
+        const centerHeight = toNumberOrNull(item.centerHeight ?? fallbackCenterInches);
 
         if (
           !item.id ||
@@ -420,12 +726,13 @@ function loadPresetsFromStorage() {
         return {
           id: item.id,
           name: item.name,
-          frameRaw: getStringOrFallback(item.frameRaw, frameHeight),
-          anchorRaw: getStringOrFallback(item.anchorRaw, anchor),
-          centerRaw: getStringOrFallback(item.centerRaw, centerHeight),
+          frameRaw: getStringOrFallback(item.frameRaw, frameHeight, unit),
+          anchorRaw: getStringOrFallback(item.anchorRaw, anchor, unit),
+          centerRaw: getStringOrFallback(item.centerRaw, centerHeight, unit),
           frameHeight,
           anchor,
           centerHeight,
+          unit,
         };
       })
       .filter(Boolean);
@@ -477,14 +784,19 @@ function renderPresets() {
 
     const metaSpan = document.createElement("span");
     metaSpan.className = "preset-item-meta";
+    const metaUnit = preset.unit && UNIT_OPTIONS.has(preset.unit) ? preset.unit : UNITS.INCHES;
     const { nailHeight } = computeFrameMeasurements(
       preset.frameHeight,
       preset.anchor,
       preset.centerHeight,
     );
-    metaSpan.textContent = `Frame ${formatInches(preset.frameHeight)} · Anchor ${formatInches(
+    metaSpan.textContent = `Frame ${formatMeasurement(preset.frameHeight, metaUnit)} · Anchor ${formatMeasurement(
       preset.anchor,
-    )} · Center ${formatInches(preset.centerHeight)} · Nail ${formatInches(nailHeight)}`;
+      metaUnit,
+    )} · Center ${formatMeasurement(preset.centerHeight, metaUnit)} · Nail ${formatMeasurement(
+      nailHeight,
+      metaUnit,
+    )}`;
 
     mainButton.append(nameSpan, metaSpan);
 
@@ -525,12 +837,13 @@ function handlePresetFormSubmit(event) {
     return;
   }
 
-  const frameRaw = frameInchesInput.value.trim();
-  const anchorRaw = anchorInput.value.trim();
-  const centerRaw =
-    centerInchesInput.value.trim() === ""
-      ? `${DEFAULT_CENTER_HEIGHT_INCHES}`
-      : centerInchesInput.value.trim();
+  const frameRaw = frameInput ? frameInput.value.trim() : "";
+  const anchorRaw = anchorInput ? anchorInput.value.trim() : "";
+  const rawCenterInput = centerInput ? centerInput.value.trim() : "";
+  const defaultCenterString =
+    (DEFAULT_EXAMPLES[currentUnit] && DEFAULT_EXAMPLES[currentUnit].center) ||
+    `${getDefaultCenterForUnit(currentUnit)}`;
+  const centerRaw = rawCenterInput === "" ? defaultCenterString : rawCenterInput;
 
   const payload = {
     id: presetIdInput.value || generatePresetId(),
@@ -541,6 +854,7 @@ function handlePresetFormSubmit(event) {
     frameHeight,
     anchor,
     centerHeight,
+    unit: currentUnit,
   };
 
   const existingIndex = presets.findIndex((preset) => preset.id === payload.id);
@@ -623,9 +937,23 @@ function handlePresetNewClick() {
 }
 
 function loadPresetIntoInputs(preset) {
-  frameInchesInput.value = preset.frameRaw || `${preset.frameHeight}`;
-  anchorInput.value = preset.anchorRaw || `${preset.anchor}`;
-  centerInchesInput.value = preset.centerRaw || `${preset.centerHeight}`;
+  const presetUnit = preset.unit && UNIT_OPTIONS.has(preset.unit) ? preset.unit : UNITS.INCHES;
+  if (presetUnit !== currentUnit) {
+    changeUnit(presetUnit, { skipConversion: true });
+  } else {
+    applyUnitCopies(presetUnit);
+    applyInputPlaceholders(presetUnit);
+  }
+
+  if (frameInput) {
+    frameInput.value = preset.frameRaw || formatInputValue(preset.frameHeight, presetUnit);
+  }
+  if (anchorInput) {
+    anchorInput.value = preset.anchorRaw || formatInputValue(preset.anchor, presetUnit);
+  }
+  if (centerInput) {
+    centerInput.value = preset.centerRaw || formatInputValue(preset.centerHeight, presetUnit);
+  }
   activePresetId = preset.id;
   handleCalculate();
   renderPresets();
@@ -781,9 +1109,12 @@ function toNumberOrNull(value) {
   return Number.isFinite(numeric) ? numeric : null;
 }
 
-function getStringOrFallback(raw, fallbackNumber) {
+function getStringOrFallback(raw, fallbackNumber, unit = UNITS.INCHES) {
   if (typeof raw === "string" && raw.trim() !== "") {
     return raw;
   }
-  return `${fallbackNumber}`;
+  if (fallbackNumber === null || typeof fallbackNumber !== "number" || Number.isNaN(fallbackNumber)) {
+    return "";
+  }
+  return formatInputValue(fallbackNumber, unit);
 }

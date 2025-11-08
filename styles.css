@@ -127,10 +127,80 @@ main.app {
 
 .hero-header {
   display: flex;
-  align-items: flex-end;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 1.5rem;
   flex-wrap: wrap;
+}
+
+.hero-tools {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.unit-toggle {
+  margin: 0;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface-layer);
+  box-shadow: var(--card-shadow);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.unit-toggle legend {
+  margin: 0;
+  padding: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.unit-toggle-options {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.unit-radio {
+  position: relative;
+  display: inline-flex;
+}
+
+.unit-radio input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  width: 1px;
+  height: 1px;
+}
+
+.unit-radio label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.3rem 0.85rem;
+  border-radius: 999px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 160ms ease, color 160ms ease, box-shadow 160ms ease;
+}
+
+.unit-radio input:checked + label {
+  background: rgba(var(--accent-rgb), 0.1);
+  color: var(--text);
+}
+
+.unit-radio input:focus-visible + label {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .theme-toggle {
@@ -187,6 +257,16 @@ main.app {
 
 :root[data-theme="dark"] .theme-toggle {
   box-shadow: var(--floating-shadow);
+}
+
+:root[data-theme="dark"] .unit-toggle {
+  box-shadow: var(--floating-shadow);
+  background: var(--surface-layer);
+}
+
+:root[data-theme="dark"] .unit-radio input:checked + label {
+  background: rgba(var(--accent-rgb), 0.22);
+  color: #f5f7ff;
 }
 
 .hero p {
@@ -1275,6 +1355,112 @@ main.app {
   border-color: rgba(255, 154, 166, 0.6);
 }
 
+.faq-section {
+  margin-top: 4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.faq-section h2,
+.faq-section h3 {
+  margin: 0;
+}
+
+.faq-section h3 {
+  color: var(--muted);
+  font-size: 1.15rem;
+  font-weight: 600;
+}
+
+.faq-item {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--card);
+  box-shadow: var(--card-shadow);
+  padding: 0.4rem 1.15rem;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.faq-item:hover,
+.faq-item:focus-within {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.faq-item[open] {
+  border-color: rgba(var(--accent-rgb), 0.35);
+  box-shadow: var(--card-shadow-hover);
+}
+
+.faq-item summary {
+  list-style: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: var(--text);
+  padding: 0.85rem 0;
+  outline: none;
+  position: relative;
+}
+
+.faq-item summary::-webkit-details-marker {
+  display: none;
+}
+
+.faq-item summary::after {
+  content: "";
+  width: 0.65rem;
+  height: 0.65rem;
+  border-right: 2px solid var(--muted);
+  border-bottom: 2px solid var(--muted);
+  transform: rotate(45deg);
+  margin-left: auto;
+  transition: transform 160ms ease, border-color 160ms ease;
+}
+
+.faq-item[open] summary::after {
+  transform: rotate(-135deg);
+  border-color: rgba(var(--accent-rgb), 0.85);
+}
+
+.faq-item summary:focus-visible {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+  border-radius: 12px;
+}
+
+.faq-item p {
+  margin: 0;
+  padding: 0 0 1rem;
+  color: var(--muted);
+  line-height: 1.65;
+  font-size: 0.98rem;
+}
+
+.faq-item[open] p {
+  padding-top: 0.2rem;
+}
+
+:root[data-theme="dark"] .faq-item {
+  background: var(--surface-layer);
+}
+
+:root[data-theme="dark"] .faq-item summary::after {
+  border-color: rgba(154, 166, 200, 0.85);
+}
+
+:root[data-theme="dark"] .faq-item[open] summary::after {
+  border-color: rgba(var(--accent-rgb), 0.95);
+}
+
+:root[data-theme="dark"] .faq-item p {
+  color: rgba(202, 211, 235, 0.82);
+}
+
 footer {
   text-align: center;
   font-size: 0.9rem;
@@ -1314,6 +1500,11 @@ footer {
     flex-direction: column;
     align-items: flex-start;
     gap: 1rem;
+  }
+
+  .hero-tools {
+    width: 100%;
+    justify-content: flex-start;
   }
 
   .measurements {
