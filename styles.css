@@ -931,6 +931,7 @@ main.app {
   border-radius: 16px;
   padding: 0.85rem 1rem;
   transition: border-color 160ms ease, box-shadow 160ms ease;
+  position: relative;
 }
 
 .input-shell:focus-within {
@@ -969,8 +970,8 @@ main.app {
   padding: 1rem 1.25rem 1.2rem;
   border: 1px solid var(--border);
   border-radius: 22px;
-  background: var(--surface-floating);
-  box-shadow: var(--panel-shadow);
+  background: var(--card);
+  box-shadow: 0 26px 60px rgba(21, 34, 56, 0.25);
   position: fixed;
   left: 50%;
   transform: translateX(-50%);
@@ -1046,6 +1047,30 @@ body.has-mobile-keypad main.app {
 
 .mobile-keypad-key--wide {
   grid-column: span 2;
+}
+
+.mobile-input-caret {
+  position: absolute;
+  width: 2px;
+  height: 1.9rem;
+  background: var(--accent);
+  border-radius: 999px;
+  top: 50%;
+  transform: translateY(-50%);
+  animation: mobileCaretBlink 1s steps(2, start) infinite;
+  pointer-events: none;
+}
+
+@keyframes mobileCaretBlink {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
 }
 
 .unit-tag {

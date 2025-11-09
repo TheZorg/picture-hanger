@@ -69,6 +69,10 @@ let lastDeletedPreset = null;
 let undoTimer = null;
 let currentUnit = UNITS.INCHES;
 let defaultSecondaryMessage = DEFAULT_SECONDARY_MESSAGES[currentUnit];
+let mobileCaretElement = null;
+let textMeasureContext = null;
+let inputModeNoneSupported = null;
+let mobileKeypadInitialized = false;
 
 resultValue.classList.add("is-placeholder");
 
@@ -443,11 +447,14 @@ function applyFractionFriendlyInputMode() {
     }
 
     if (useCustomMobileKeypad) {
-      input.setAttribute("inputmode", "none");
+      input.setAttribute("inputmode", supportsInputModeNone() ? "none" : "decimal");
       input.setAttribute("enterkeyhint", "done");
       input.setAttribute("pattern", "[0-9 ./]*");
       input.setAttribute("readonly", "readonly");
       input.readOnly = true;
+      if (!input.dataset.cursorIndex) {
+        input.dataset.cursorIndex = `${input.value.length}`;
+      }
       input.classList.add("uses-mobile-keypad");
     } else if (useTextInputMode) {
       input.setAttribute("inputmode", "text");
@@ -456,6 +463,7 @@ function applyFractionFriendlyInputMode() {
       input.removeAttribute("readonly");
       input.readOnly = false;
       input.classList.remove("uses-mobile-keypad");
+      delete input.dataset.cursorIndex;
     } else {
       input.setAttribute("inputmode", "decimal");
       input.removeAttribute("enterkeyhint");
@@ -463,11 +471,14 @@ function applyFractionFriendlyInputMode() {
       input.removeAttribute("readonly");
       input.readOnly = false;
       input.classList.remove("uses-mobile-keypad");
+      delete input.dataset.cursorIndex;
     }
   });
 
   if (useCustomMobileKeypad) {
     initMobileMeasurementKeypad(inputs);
+  } else {
+    detachMobileCaret();
   }
 }
 
@@ -486,10 +497,38 @@ function shouldUseMobileKeypad() {
   return compactViewport && (hasTouchPoints || hasTouchEvent || prefersCoarsePointer);
 }
 
+function supportsInputModeNone() {
+  if (typeof document === "undefined") {
+    inputModeNoneSupported = false;
+    return false;
+  }
+
+  if (typeof inputModeNoneSupported === "boolean") {
+    return inputModeNoneSupported;
+  }
+
+  const testInput = document.createElement("input");
+  if (!testInput) {
+    inputModeNoneSupported = false;
+    return false;
+  }
+
+  testInput.setAttribute("inputmode", "none");
+  inputModeNoneSupported =
+    typeof testInput.inputMode === "string" || testInput.getAttribute("inputmode") === "none";
+  return inputModeNoneSupported;
+}
+
 function initMobileMeasurementKeypad(inputs) {
   if (!mobileKeypad) {
     return;
   }
+
+  if (mobileKeypadInitialized) {
+    return;
+  }
+
+  mobileKeypadInitialized = true;
 
   let activeInput = null;
   const measurementShells = inputs
@@ -502,16 +541,39 @@ function initMobileMeasurementKeypad(inputs) {
     }
   };
 
+  const setActiveInput = (nextInput) => {
+    if (activeInput === nextInput) {
+      return;
+    }
+
+    activeInput = nextInput;
+    if (activeInput && isCustomKeypadInput(activeInput)) {
+      attachMobileCaretToInput(activeInput);
+      if (!activeInput.dataset.cursorIndex) {
+        activeInput.dataset.cursorIndex = `${activeInput.value.length}`;
+      }
+      updateMobileCaretPosition(activeInput);
+    } else if (!activeInput) {
+      detachMobileCaret();
+    }
+  };
+
   const showKeypad = () => {
     mobileKeypad.hidden = false;
     mobileKeypad.setAttribute("aria-hidden", "false");
     toggleBodyPadding(true);
+    if (activeInput && isCustomKeypadInput(activeInput)) {
+      attachMobileCaretToInput(activeInput);
+    }
   };
 
   const hideKeypad = () => {
     mobileKeypad.hidden = true;
     mobileKeypad.setAttribute("aria-hidden", "true");
-    activeInput = null;
+    if (activeInput) {
+      activeInput.blur();
+    }
+    setActiveInput(null);
     toggleBodyPadding(false);
   };
 
@@ -520,10 +582,51 @@ function initMobileMeasurementKeypad(inputs) {
       return;
     }
 
+    if (input.dataset.mobileKeypadBound === "true") {
+      return;
+    }
+
+    input.dataset.mobileKeypadBound = "true";
+
     input.addEventListener("focus", () => {
-      activeInput = input;
+      if (!isCustomKeypadInput(input)) {
+        return;
+      }
+      setActiveInput(input);
       showKeypad();
       moveCursorToEnd(input);
+    });
+
+    input.addEventListener(
+      "pointerdown",
+      (event) => {
+        if (!isCustomKeypadInput(input)) {
+          return;
+        }
+        event.preventDefault();
+        if (mobileKeypad.hidden) {
+          showKeypad();
+        }
+        setActiveInput(input);
+        const pointerIndex = getCursorIndexFromPointer(input, event);
+        setCursorPosition(input, pointerIndex);
+      },
+      { passive: false }
+    );
+
+    input.addEventListener("input", () => {
+      if (!isCustomKeypadInput(input)) {
+        return;
+      }
+      const cursorIndex = Math.min(getCursorPosition(input), input.value.length);
+      input.dataset.cursorIndex = `${cursorIndex}`;
+      updateMobileCaretPosition(input);
+    });
+
+    input.addEventListener("blur", () => {
+      if (activeInput === input && mobileKeypad.hidden) {
+        setActiveInput(null);
+      }
     });
   });
 
@@ -562,9 +665,6 @@ function initMobileMeasurementKeypad(inputs) {
     const action = button.dataset.action;
     if (action === "close") {
       hideKeypad();
-      if (activeInput) {
-        activeInput.blur();
-      }
       return;
     }
 
@@ -582,47 +682,41 @@ function initMobileMeasurementKeypad(inputs) {
     }
 
     activeInput.focus();
-    if (activeInput.classList.contains("uses-mobile-keypad")) {
-      moveCursorToEnd(activeInput);
+    if (isCustomKeypadInput(activeInput)) {
+      updateMobileCaretPosition(activeInput);
     }
   });
 }
 
 function moveCursorToEnd(input) {
-  if (!input || typeof input.setSelectionRange !== "function") {
+  if (!input) {
     return;
   }
-
-  const valueLength = input.value.length;
-  requestAnimationFrame(() => {
-    try {
-      input.setSelectionRange(valueLength, valueLength);
-    } catch {
-      /* noop */
-    }
-  });
+  setCursorPosition(input, input.value.length);
 }
 
 function insertTextAtCursor(input, text) {
-  const selectionStart = typeof input.selectionStart === "number" ? input.selectionStart : input.value.length;
-  const selectionEnd = typeof input.selectionEnd === "number" ? input.selectionEnd : input.value.length;
+  const selectionStart = getCursorPosition(input);
+  const selectionEnd = isCustomKeypadInput(input)
+    ? selectionStart
+    : typeof input.selectionEnd === "number"
+      ? input.selectionEnd
+      : selectionStart;
   const nextValue = input.value.slice(0, selectionStart) + text + input.value.slice(selectionEnd);
 
   input.value = nextValue;
   const nextCursorPosition = selectionStart + text.length;
-  if (typeof input.setSelectionRange === "function") {
-    try {
-      input.setSelectionRange(nextCursorPosition, nextCursorPosition);
-    } catch {
-      /* noop */
-    }
-  }
+  setCursorPosition(input, nextCursorPosition);
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
 
 function deleteCharacterAtCursor(input) {
-  const selectionStart = typeof input.selectionStart === "number" ? input.selectionStart : input.value.length;
-  const selectionEnd = typeof input.selectionEnd === "number" ? input.selectionEnd : input.value.length;
+  const selectionStart = getCursorPosition(input);
+  const selectionEnd = isCustomKeypadInput(input)
+    ? selectionStart
+    : typeof input.selectionEnd === "number"
+      ? input.selectionEnd
+      : selectionStart;
 
   if (selectionStart === 0 && selectionEnd === 0) {
     return;
@@ -640,10 +734,199 @@ function deleteCharacterAtCursor(input) {
     cursorPosition = 0;
   }
 
-  if (typeof input.setSelectionRange === "function") {
-    input.setSelectionRange(cursorPosition, cursorPosition);
-  }
+  setCursorPosition(input, cursorPosition);
   input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
+function isCustomKeypadInput(input) {
+  return Boolean(input && input.classList && input.classList.contains("uses-mobile-keypad"));
+}
+
+function getCursorPosition(input) {
+  if (!input) {
+    return 0;
+  }
+
+  if (isCustomKeypadInput(input)) {
+    const stored = Number(input.dataset.cursorIndex);
+    if (Number.isFinite(stored)) {
+      return Math.max(0, Math.min(stored, input.value.length));
+    }
+    return input.value.length;
+  }
+
+  if (typeof input.selectionStart === "number") {
+    return input.selectionStart;
+  }
+
+  return input.value.length;
+}
+
+function setCursorPosition(input, index) {
+  if (!input) {
+    return;
+  }
+
+  const clamped = Math.max(0, Math.min(index, input.value.length));
+
+  if (isCustomKeypadInput(input)) {
+    input.dataset.cursorIndex = `${clamped}`;
+    updateMobileCaretPosition(input);
+  }
+
+  if (typeof input.setSelectionRange === "function" && !input.readOnly) {
+    requestAnimationFrame(() => {
+      try {
+        input.setSelectionRange(clamped, clamped);
+      } catch {
+        /* noop */
+      }
+    });
+  }
+}
+
+function getCursorIndexFromPointer(input, event) {
+  if (!isCustomKeypadInput(input) || !event) {
+    return getCursorPosition(input);
+  }
+
+  const style = window.getComputedStyle(input);
+  const rect = input.getBoundingClientRect();
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const contentWidth = Math.max(0, rect.width - paddingLeft - paddingRight);
+  let relativeX = event.clientX - rect.left - paddingLeft;
+  relativeX = Math.max(0, Math.min(relativeX, contentWidth));
+
+  const value = input.value || "";
+  if (value.length === 0) {
+    return 0;
+  }
+
+  let widthAccumulator = 0;
+  for (let index = 0; index < value.length; index += 1) {
+    const char = value.charAt(index);
+    const charWidth = measureInputTextWidth(input, char);
+    const midpoint = widthAccumulator + charWidth / 2;
+    if (relativeX < midpoint) {
+      return index;
+    }
+    widthAccumulator += charWidth;
+  }
+
+  return value.length;
+}
+
+function attachMobileCaretToInput(input) {
+  if (!isCustomKeypadInput(input) || !mobileKeypad || mobileKeypad.hidden) {
+    return;
+  }
+
+  const shell = input.closest(".input-shell");
+  if (!shell) {
+    return;
+  }
+
+  const caret = ensureMobileCaretElement();
+  if (!caret) {
+    return;
+  }
+  if (caret.parentElement !== shell) {
+    caret.remove();
+    shell.appendChild(caret);
+  }
+
+  caret.hidden = false;
+  updateMobileCaretPosition(input);
+}
+
+function detachMobileCaret() {
+  if (mobileCaretElement && mobileCaretElement.parentElement) {
+    mobileCaretElement.parentElement.removeChild(mobileCaretElement);
+  }
+  if (mobileCaretElement) {
+    mobileCaretElement.hidden = true;
+  }
+}
+
+function ensureMobileCaretElement() {
+  if (mobileCaretElement || typeof document === "undefined") {
+    return mobileCaretElement;
+  }
+
+  mobileCaretElement = document.createElement("span");
+  mobileCaretElement.className = "mobile-input-caret";
+  mobileCaretElement.setAttribute("aria-hidden", "true");
+  return mobileCaretElement;
+}
+
+function updateMobileCaretPosition(input) {
+  if (!isCustomKeypadInput(input) || !mobileKeypad || mobileKeypad.hidden) {
+    return;
+  }
+
+  const shell = input.closest(".input-shell");
+  if (!shell) {
+    return;
+  }
+
+  const caret = ensureMobileCaretElement();
+  if (!caret) {
+    return;
+  }
+  if (caret.parentElement !== shell) {
+    shell.appendChild(caret);
+  }
+
+  const shellRect = shell.getBoundingClientRect();
+  const inputRect = input.getBoundingClientRect();
+  const style = window.getComputedStyle(input);
+  const paddingLeft = parseFloat(style.paddingLeft) || 0;
+  const paddingRight = parseFloat(style.paddingRight) || 0;
+  const cursorIndex = getCursorPosition(input);
+  const textBeforeCaret = input.value.slice(0, cursorIndex);
+  const textWidth = measureInputTextWidth(input, textBeforeCaret);
+  const maxOffset = Math.max(0, inputRect.width - paddingRight - 2);
+  const offsetInsideInput = Math.max(0, Math.min(textWidth, maxOffset));
+  const leftPosition = inputRect.left - shellRect.left + paddingLeft + offsetInsideInput;
+  caret.style.left = `${leftPosition}px`;
+}
+
+function measureInputTextWidth(input, text) {
+  if (!input || typeof window === "undefined") {
+    return 0;
+  }
+
+  const context = getTextMeasureContext(input);
+  if (!context) {
+    return 0;
+  }
+  const style = window.getComputedStyle(input);
+  const letterSpacing = parseFloat(style.letterSpacing) || 0;
+  const content = text || "";
+  const baseWidth = context.measureText(content).width;
+  const spacingAdjustment = Math.max(0, content.length - 1) * letterSpacing;
+  return baseWidth + spacingAdjustment;
+}
+
+function getTextMeasureContext(input) {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  if (!textMeasureContext) {
+    const canvas = document.createElement("canvas");
+    textMeasureContext = canvas.getContext("2d");
+  }
+
+  const style = window.getComputedStyle(input);
+  const fontStyle = style.fontStyle || "normal";
+  const fontVariant = style.fontVariant || "normal";
+  const fontWeight = style.fontWeight || "400";
+  const fontSize = style.fontSize || "16px";
+  const fontFamily = style.fontFamily || "sans-serif";
+  textMeasureContext.font = `${fontStyle} ${fontVariant} ${fontWeight} ${fontSize} ${fontFamily}`;
+  return textMeasureContext;
 }
 
 function parseInputs() {
