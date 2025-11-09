@@ -443,17 +443,26 @@ function applyFractionFriendlyInputMode() {
     }
 
     if (useCustomMobileKeypad) {
-      input.setAttribute("inputmode", "decimal");
+      input.setAttribute("inputmode", "none");
       input.setAttribute("enterkeyhint", "done");
       input.setAttribute("pattern", "[0-9 ./]*");
+      input.setAttribute("readonly", "readonly");
+      input.readOnly = true;
+      input.classList.add("uses-mobile-keypad");
     } else if (useTextInputMode) {
       input.setAttribute("inputmode", "text");
       input.setAttribute("enterkeyhint", "done");
       input.removeAttribute("pattern");
+      input.removeAttribute("readonly");
+      input.readOnly = false;
+      input.classList.remove("uses-mobile-keypad");
     } else {
       input.setAttribute("inputmode", "decimal");
       input.removeAttribute("enterkeyhint");
       input.removeAttribute("pattern");
+      input.removeAttribute("readonly");
+      input.readOnly = false;
+      input.classList.remove("uses-mobile-keypad");
     }
   });
 
@@ -514,6 +523,7 @@ function initMobileMeasurementKeypad(inputs) {
     input.addEventListener("focus", () => {
       activeInput = input;
       showKeypad();
+      moveCursorToEnd(input);
     });
   });
 
@@ -572,6 +582,24 @@ function initMobileMeasurementKeypad(inputs) {
     }
 
     activeInput.focus();
+    if (activeInput.classList.contains("uses-mobile-keypad")) {
+      moveCursorToEnd(activeInput);
+    }
+  });
+}
+
+function moveCursorToEnd(input) {
+  if (!input || typeof input.setSelectionRange !== "function") {
+    return;
+  }
+
+  const valueLength = input.value.length;
+  requestAnimationFrame(() => {
+    try {
+      input.setSelectionRange(valueLength, valueLength);
+    } catch {
+      /* noop */
+    }
   });
 }
 
@@ -583,7 +611,11 @@ function insertTextAtCursor(input, text) {
   input.value = nextValue;
   const nextCursorPosition = selectionStart + text.length;
   if (typeof input.setSelectionRange === "function") {
-    input.setSelectionRange(nextCursorPosition, nextCursorPosition);
+    try {
+      input.setSelectionRange(nextCursorPosition, nextCursorPosition);
+    } catch {
+      /* noop */
+    }
   }
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
