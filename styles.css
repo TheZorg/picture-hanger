@@ -964,6 +964,73 @@ main.app {
   color: var(--placeholder-color);
 }
 
+.mobile-keypad {
+  margin-top: 1.5rem;
+  padding: 1rem 1.25rem 1.2rem;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--surface-floating);
+  box-shadow: var(--panel-shadow);
+  position: sticky;
+  bottom: 1rem;
+  z-index: 5;
+}
+
+.mobile-keypad[hidden] {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .mobile-keypad {
+    display: none !important;
+  }
+}
+
+.mobile-keypad-label {
+  margin: 0 0 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.mobile-keypad-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.mobile-keypad-key {
+  border: none;
+  border-radius: 16px;
+  padding: 0.85rem 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  background: rgba(var(--accent-rgb), 0.08);
+  color: var(--text);
+  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.18);
+  cursor: pointer;
+  transition: transform 140ms ease, background 140ms ease;
+  touch-action: manipulation;
+}
+
+.mobile-keypad-key:active {
+  transform: translateY(1px);
+  background: rgba(var(--accent-rgb), 0.2);
+}
+
+.mobile-keypad-key:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mobile-keypad-key--icon {
+  font-size: 1rem;
+}
+
+.mobile-keypad-key--wide {
+  grid-column: span 2;
+}
+
 .unit-tag {
   font-size: 1rem;
   font-weight: 600;
