@@ -57,6 +57,8 @@ const DEFAULT_SECONDARY_MESSAGES = {
   [UNITS.INCHES]: "We'll show the top and bottom of the frame once you add your numbers.",
   [UNITS.CENTIMETERS]: "We'll show the top and bottom of the frame once you add your numbers.",
 };
+const MOBILE_KEYPAD_TRANSITION_MS = 220;
+const MOBILE_SCROLL_MARGIN_PX = 18;
 const systemColorScheme =
   typeof window.matchMedia === "function"
     ? window.matchMedia("(prefers-color-scheme: dark)")
@@ -73,6 +75,7 @@ let mobileCaretElement = null;
 let textMeasureContext = null;
 let inputModeNoneSupported = null;
 let mobileKeypadInitialized = false;
+let mobileKeypadHideTimer = null;
 
 resultValue.classList.add("is-placeholder");
 
@@ -519,6 +522,71 @@ function supportsInputModeNone() {
   return inputModeNoneSupported;
 }
 
+function isKeypadVisible() {
+  return Boolean(mobileKeypad && mobileKeypad.classList.contains("is-visible") && !mobileKeypad.hidden);
+}
+
+function applyBodyKeypadState(isVisible) {
+  if (!document.body) {
+    return;
+  }
+  document.body.classList.toggle("has-mobile-keypad", isVisible);
+  if (!isVisible) {
+    document.body.style.removeProperty("--mobile-keypad-height");
+  }
+}
+
+function updateBodyKeypadPadding() {
+  if (!document.body || !isKeypadVisible()) {
+    return;
+  }
+  const rect = mobileKeypad.getBoundingClientRect();
+  document.body.style.setProperty("--mobile-keypad-height", `${Math.round(rect.height)}px`);
+}
+
+function getVisibleKeypadHeight() {
+  if (!isKeypadVisible()) {
+    return 0;
+  }
+  return mobileKeypad.getBoundingClientRect().height;
+}
+
+function ensureInputVisible(input) {
+  if (!input || typeof window === "undefined") {
+    return;
+  }
+
+  const card = input.closest(".measurement-card") || input;
+  const rect = card.getBoundingClientRect();
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+  const keypadHeight = getVisibleKeypadHeight();
+  const availableBottom = viewportHeight - keypadHeight - MOBILE_SCROLL_MARGIN_PX;
+  const minTop = MOBILE_SCROLL_MARGIN_PX;
+
+  if (rect.bottom > availableBottom) {
+    const scrollDelta = rect.bottom - availableBottom;
+    smoothScrollBy(scrollDelta);
+    return;
+  }
+
+  if (rect.top < minTop) {
+    const scrollDelta = rect.top - minTop;
+    smoothScrollBy(scrollDelta);
+  }
+}
+
+function smoothScrollBy(deltaY) {
+  if (typeof window === "undefined") {
+    return;
+  }
+  if (typeof window.scrollBy === "function") {
+    window.scrollBy({ top: deltaY, behavior: "smooth" });
+    return;
+  }
+  const start = window.pageYOffset || document.documentElement.scrollTop || 0;
+  window.scrollTo({ top: start + deltaY, behavior: "smooth" });
+}
+
 function initMobileMeasurementKeypad(inputs) {
   if (!mobileKeypad) {
     return;
@@ -535,12 +603,6 @@ function initMobileMeasurementKeypad(inputs) {
     .map((input) => (input ? input.closest(".measurement-input") : null))
     .filter(Boolean);
 
-  const toggleBodyPadding = (isVisible) => {
-    if (document.body) {
-      document.body.classList.toggle("has-mobile-keypad", isVisible);
-    }
-  };
-
   const setActiveInput = (nextInput) => {
     if (activeInput === nextInput) {
       return;
@@ -553,28 +615,51 @@ function initMobileMeasurementKeypad(inputs) {
         activeInput.dataset.cursorIndex = `${activeInput.value.length}`;
       }
       updateMobileCaretPosition(activeInput);
+      ensureInputVisible(activeInput);
     } else if (!activeInput) {
       detachMobileCaret();
     }
   };
 
   const showKeypad = () => {
+    if (!mobileKeypad) {
+      return;
+    }
+    window.clearTimeout(mobileKeypadHideTimer);
     mobileKeypad.hidden = false;
     mobileKeypad.setAttribute("aria-hidden", "false");
-    toggleBodyPadding(true);
-    if (activeInput && isCustomKeypadInput(activeInput)) {
-      attachMobileCaretToInput(activeInput);
-    }
+    applyBodyKeypadState(true);
+    requestAnimationFrame(() => {
+      if (!mobileKeypad) {
+        return;
+      }
+      mobileKeypad.classList.add("is-visible");
+      updateBodyKeypadPadding();
+      if (activeInput && isCustomKeypadInput(activeInput)) {
+        attachMobileCaretToInput(activeInput);
+        ensureInputVisible(activeInput);
+      }
+    });
   };
 
   const hideKeypad = () => {
-    mobileKeypad.hidden = true;
-    mobileKeypad.setAttribute("aria-hidden", "true");
-    if (activeInput) {
-      activeInput.blur();
+    if (!mobileKeypad) {
+      return;
     }
+    mobileKeypad.classList.remove("is-visible");
+    mobileKeypad.setAttribute("aria-hidden", "true");
+    applyBodyKeypadState(false);
+    const previousInput = activeInput;
     setActiveInput(null);
-    toggleBodyPadding(false);
+    if (previousInput) {
+      previousInput.blur();
+    }
+    window.clearTimeout(mobileKeypadHideTimer);
+    mobileKeypadHideTimer = window.setTimeout(() => {
+      if (mobileKeypad) {
+        mobileKeypad.hidden = true;
+      }
+    }, MOBILE_KEYPAD_TRANSITION_MS);
   };
 
   inputs.forEach((input) => {
@@ -595,6 +680,7 @@ function initMobileMeasurementKeypad(inputs) {
       setActiveInput(input);
       showKeypad();
       moveCursorToEnd(input);
+      ensureInputVisible(input);
     });
 
     input.addEventListener(
@@ -604,12 +690,13 @@ function initMobileMeasurementKeypad(inputs) {
           return;
         }
         event.preventDefault();
-        if (mobileKeypad.hidden) {
+        if (!isKeypadVisible()) {
           showKeypad();
         }
         setActiveInput(input);
         const pointerIndex = getCursorIndexFromPointer(input, event);
         setCursorPosition(input, pointerIndex);
+        ensureInputVisible(input);
       },
       { passive: false }
     );
@@ -624,14 +711,14 @@ function initMobileMeasurementKeypad(inputs) {
     });
 
     input.addEventListener("blur", () => {
-      if (activeInput === input && mobileKeypad.hidden) {
+      if (activeInput === input && !isKeypadVisible()) {
         setActiveInput(null);
       }
     });
   });
 
   document.addEventListener("pointerdown", (event) => {
-    if (!mobileKeypad || mobileKeypad.hidden) {
+    if (!isKeypadVisible()) {
       return;
     }
 
@@ -640,7 +727,7 @@ function initMobileMeasurementKeypad(inputs) {
       return;
     }
 
-    if (mobileKeypad.contains(target)) {
+    if (mobileKeypad && mobileKeypad.contains(target)) {
       return;
     }
 
@@ -684,6 +771,18 @@ function initMobileMeasurementKeypad(inputs) {
     activeInput.focus();
     if (isCustomKeypadInput(activeInput)) {
       updateMobileCaretPosition(activeInput);
+      ensureInputVisible(activeInput);
+    }
+  });
+
+  window.addEventListener("resize", () => {
+    if (!isKeypadVisible()) {
+      return;
+    }
+    updateBodyKeypadPadding();
+    if (activeInput && isCustomKeypadInput(activeInput)) {
+      updateMobileCaretPosition(activeInput);
+      ensureInputVisible(activeInput);
     }
   });
 }
@@ -818,7 +917,7 @@ function getCursorIndexFromPointer(input, event) {
 }
 
 function attachMobileCaretToInput(input) {
-  if (!isCustomKeypadInput(input) || !mobileKeypad || mobileKeypad.hidden) {
+  if (!isCustomKeypadInput(input) || !isKeypadVisible()) {
     return;
   }
 
@@ -861,7 +960,7 @@ function ensureMobileCaretElement() {
 }
 
 function updateMobileCaretPosition(input) {
-  if (!isCustomKeypadInput(input) || !mobileKeypad || mobileKeypad.hidden) {
+  if (!isCustomKeypadInput(input) || !isKeypadVisible()) {
     return;
   }
 

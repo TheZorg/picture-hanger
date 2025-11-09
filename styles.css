@@ -111,6 +111,7 @@ body {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
+  --mobile-keypad-height: 230px;
 }
 
 main.app {
@@ -971,25 +972,42 @@ main.app {
   border: 1px solid var(--border);
   border-radius: 22px;
   background: var(--card);
-  box-shadow: 0 26px 60px rgba(21, 34, 56, 0.25);
+  box-shadow: 0 14px 32px rgba(21, 34, 56, 0.18);
   position: fixed;
   left: 50%;
-  transform: translateX(-50%);
+  transform: translate(-50%, 32px);
   bottom: calc(env(safe-area-inset-bottom, 0px) + 0.85rem);
   z-index: 60;
   width: min(420px, calc(100% - 2rem));
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: transform 220ms ease, opacity 220ms ease;
+}
+
+.mobile-keypad.is-visible {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translate(-50%, 0);
 }
 
 .mobile-keypad[hidden] {
   display: none;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .mobile-keypad {
+    transition: none;
+  }
+}
+
 body.has-mobile-keypad {
-  padding-bottom: 230px;
+  padding-bottom: calc(var(--mobile-keypad-height) + 2rem);
 }
 
 body.has-mobile-keypad main.app {
-  padding-bottom: 5.5rem;
+  padding-bottom: calc(4rem + 0.15 * var(--mobile-keypad-height));
 }
 
 @media (min-width: 769px) {
@@ -1023,17 +1041,18 @@ body.has-mobile-keypad main.app {
   padding: 0.85rem 0;
   font-size: 1.2rem;
   font-weight: 600;
-  background: rgba(var(--accent-rgb), 0.08);
+  background: var(--surface-layer);
   color: var(--text);
-  box-shadow: 0 10px 24px rgba(var(--accent-rgb), 0.18);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.08);
   cursor: pointer;
-  transition: transform 140ms ease, background 140ms ease;
+  transition: transform 120ms ease, background 120ms ease, box-shadow 120ms ease;
   touch-action: manipulation;
 }
 
 .mobile-keypad-key:active {
   transform: translateY(1px);
-  background: rgba(var(--accent-rgb), 0.2);
+  background: rgba(var(--accent-rgb), 0.15);
+  box-shadow: inset 0 0 0 1px rgba(var(--accent-rgb), 0.2);
 }
 
 .mobile-keypad-key:focus-visible {
