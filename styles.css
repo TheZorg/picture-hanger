@@ -946,50 +946,6 @@ main.app {
   max-width: 320px;
 }
 
-.fraction-helper {
-  margin-top: 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem 0.65rem;
-  color: var(--muted);
-  font-size: 0.95rem;
-}
-
-.fraction-helper-label {
-  font-weight: 600;
-}
-
-.fraction-helper-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-}
-
-.fraction-button {
-  border: 1px solid rgba(var(--accent-rgb), 0.32);
-  background: rgba(var(--accent-rgb), 0.08);
-  color: var(--text);
-  font-weight: 600;
-  font-size: 0.95rem;
-  border-radius: 999px;
-  padding: 0.2rem 0.7rem;
-  cursor: pointer;
-  transition: background-color 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
-}
-
-.fraction-button:hover,
-.fraction-button:focus-visible {
-  background: rgba(var(--accent-rgb), 0.14);
-  border-color: rgba(var(--accent-rgb), 0.5);
-  box-shadow: 0 0 0 3px var(--accent-soft);
-  outline: none;
-}
-
-.fraction-button:focus {
-  outline: none;
-}
-
 .input-shell input {
   flex: 1;
   background: transparent;
