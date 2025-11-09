@@ -487,15 +487,23 @@ function initMobileMeasurementKeypad(inputs) {
     .map((input) => (input ? input.closest(".measurement-input") : null))
     .filter(Boolean);
 
+  const toggleBodyPadding = (isVisible) => {
+    if (document.body) {
+      document.body.classList.toggle("has-mobile-keypad", isVisible);
+    }
+  };
+
   const showKeypad = () => {
     mobileKeypad.hidden = false;
     mobileKeypad.setAttribute("aria-hidden", "false");
+    toggleBodyPadding(true);
   };
 
   const hideKeypad = () => {
     mobileKeypad.hidden = true;
     mobileKeypad.setAttribute("aria-hidden", "true");
     activeInput = null;
+    toggleBodyPadding(false);
   };
 
   inputs.forEach((input) => {
