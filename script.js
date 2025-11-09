@@ -46,6 +46,9 @@ const presetUndoMessage = document.getElementById("preset-undo-message");
 const presetUndoButton = document.getElementById("preset-undo-button");
 const presetsCard = document.querySelector(".presets-card");
 const themeSelect = document.getElementById("theme-select");
+const fractionButtons = document.querySelectorAll(
+  "[data-fraction-value][data-target-input]",
+);
 
 const UNIT_STORAGE_KEY = "picture-hanger-unit";
 const PRESET_STORAGE_KEY = "picture-hanger-presets";
@@ -415,6 +418,43 @@ function parseMeasurement(rawValue) {
   return NaN;
 }
 
+function insertFractionIntoInput(targetInput, fractionValue) {
+  if (!targetInput || !fractionValue) {
+    return;
+  }
+
+  const input = targetInput;
+  if (typeof input.focus === "function") {
+    input.focus();
+  }
+
+  const selectionStart =
+    typeof input.selectionStart === "number" ? input.selectionStart : input.value.length;
+  const selectionEnd =
+    typeof input.selectionEnd === "number" ? input.selectionEnd : input.value.length;
+  const before = input.value.slice(0, selectionStart);
+  const after = input.value.slice(selectionEnd);
+  const needsLeadingSpace = before !== "" && !/\s$/.test(before);
+  const needsTrailingSpace = after !== "" && !/^\s/.test(after);
+  let insertion = fractionValue;
+  if (needsLeadingSpace) {
+    insertion = ` ${insertion}`;
+  }
+  if (needsTrailingSpace) {
+    insertion = `${insertion} `;
+  }
+  const nextValue = `${before}${insertion}${after}`;
+
+  input.value = nextValue;
+
+  const nextCursor = before.length + insertion.length;
+  if (typeof input.setSelectionRange === "function") {
+    input.setSelectionRange(nextCursor, nextCursor);
+  }
+
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+}
+
 function parseInputs() {
   const labels = getUnitLabels(currentUnit);
 
@@ -664,6 +704,21 @@ function handleCalculate() {
       event.preventDefault();
       handleCalculate();
     }
+  });
+});
+
+fractionButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const targetId = button.dataset.targetInput;
+    const fractionValue = button.dataset.fractionValue;
+    if (!targetId || !fractionValue) {
+      return;
+    }
+    const targetInput = document.getElementById(targetId);
+    if (!targetInput) {
+      return;
+    }
+    insertFractionIntoInput(targetInput, fractionValue);
   });
 });
 
