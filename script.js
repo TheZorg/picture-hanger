@@ -25,6 +25,7 @@ const anchorInput = document.getElementById("anchor-value");
 const centerInput = document.getElementById("center-value");
 const unitInputs = document.querySelectorAll('input[name="unit-system"]');
 const unitCopyNodes = document.querySelectorAll("[data-unit-copy]");
+const unitToggleButtons = document.querySelectorAll("[data-unit-toggle]");
 const resultValue = document.getElementById("result-primary");
 const resultSecondary = document.getElementById("result-secondary");
 const frameVisual = document.getElementById("frame-visual");
@@ -194,6 +195,67 @@ function initUnitControls() {
       changeUnit(selected, { triggeredByUser: true });
     });
   });
+
+  initUnitToggleControls();
+}
+
+function initUnitToggleControls() {
+  if (!unitToggleButtons || unitToggleButtons.length === 0) {
+    return;
+  }
+
+  unitToggleButtons.forEach((button) => {
+    if (!button || button.dataset.unitToggleBound === "true") {
+      return;
+    }
+
+    button.dataset.unitToggleBound = "true";
+
+    button.addEventListener("click", (event) => {
+      event.preventDefault();
+      handleUnitToggleActivation(event.currentTarget);
+    });
+
+    button.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " " && event.key !== "Spacebar") {
+        return;
+      }
+      event.preventDefault();
+      handleUnitToggleActivation(event.currentTarget);
+    });
+  });
+
+  updateUnitToggleTargets();
+}
+
+function handleUnitToggleActivation(target) {
+  if (!target) {
+    return;
+  }
+
+  const toggleTargetUnit = target.dataset.unitToggleTarget;
+  const fallbackUnit = currentUnit === UNITS.INCHES ? UNITS.CENTIMETERS : UNITS.INCHES;
+  const nextUnit = UNIT_OPTIONS.has(toggleTargetUnit) ? toggleTargetUnit : fallbackUnit;
+  changeUnit(nextUnit, { triggeredByUser: true });
+}
+
+function updateUnitToggleTargets() {
+  if (!unitToggleButtons || unitToggleButtons.length === 0) {
+    return;
+  }
+
+  const nextUnit = currentUnit === UNITS.INCHES ? UNITS.CENTIMETERS : UNITS.INCHES;
+  const nextUnitLabels = getUnitLabels(nextUnit);
+  const labelText = nextUnitLabels ? `Switch to ${nextUnitLabels.long}` : "Switch units";
+
+  unitToggleButtons.forEach((button) => {
+    if (!button) {
+      return;
+    }
+    button.dataset.unitToggleTarget = nextUnit;
+    button.setAttribute("aria-label", labelText);
+    button.setAttribute("title", labelText);
+  });
 }
 
 function changeUnit(nextUnit, { triggeredByUser = false, skipConversion = false } = {}) {
@@ -212,6 +274,7 @@ function changeUnit(nextUnit, { triggeredByUser = false, skipConversion = false 
   updateUnitRadios(nextUnit);
   applyUnitCopies(nextUnit);
   applyInputPlaceholders(nextUnit);
+  updateUnitToggleTargets();
 
   const previousDefaultMessage = defaultSecondaryMessage;
   defaultSecondaryMessage = DEFAULT_SECONDARY_MESSAGES[nextUnit] ?? defaultSecondaryMessage;
