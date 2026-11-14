@@ -4,12 +4,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Picture Hanger Height Helper</title>
+  <title>Picture Hanger Height Calculator</title>
   <meta name="description"
-    content="Learn how high to hang your frame with the 57–60 inch rule, then calculate the exact nail height in seconds." />
+    content="Contractor-grade picture hanging calculator. Use the 57–60 inch eye-level standard to calculate exact nail height, frame edges, and wall elevation." />
   <link rel="canonical" href="https://frameheight.app" />
   <meta property="og:type" content="website" />
-  <meta property="og:title" content="Picture Hanger Height Helper" />
+  <meta property="og:title" content="Picture Hanger Height Calculator" />
   <meta property="og:description"
     content="Start with the 57–60 inch hanging rule and get the precise nail placement for your next picture frame." />
   <meta property="og:url" content="https://frameheight.app" />
@@ -17,7 +17,7 @@
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
   <meta name="twitter:card" content="summary_large_image" />
-  <meta name="twitter:title" content="Picture Hanger Height Helper" />
+  <meta name="twitter:title" content="Picture Hanger Height Calculator" />
   <meta name="twitter:description"
     content="Wondering how high to hang a frame? Follow the 57–60 inch rule and let the calculator place the nail for you." />
   <meta name="twitter:image" content="https://frameheight.app/assets/og-image.png" />
@@ -29,14 +29,14 @@
       "@graph": [
         {
           "@type": "WebSite",
-          "name": "Picture Hanger Height Helper",
+          "name": "Picture Hanger Height Calculator",
           "url": "https://thezorg.github.io/picture-hanger/",
           "description": "Learn the 57\u201360 inch picture hanging rule and calculate the exact nail height in seconds.",
           "inLanguage": "en"
         },
         {
           "@type": "WebApplication",
-          "name": "Picture Hanger Height Helper",
+          "name": "Picture Hanger Height Calculator",
           "applicationCategory": "HomeApplication",
           "operatingSystem": "Any",
           "url": "https://thezorg.github.io/picture-hanger/",
@@ -51,7 +51,7 @@
               "name": "How does the picture hanger calculator find the nail height?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "It subtracts half of your frame height from the desired center height, then adds the hanger's drop measurement so the top of the frame lands exactly where you expect."
+                "text": "It adds half of your frame height to the desired center height, then subtracts the hanger's drop measurement so the frame lands at your target center."
               }
             },
             {
@@ -59,7 +59,7 @@
               "name": "What is a worked example for the calculator?",
               "acceptedAnswer": {
                 "@type": "Answer",
-                "text": "If you want the frame centered at 60 inches, the frame is 24 inches tall, and the hanger drops 2 inches, the nail goes at 50 inches (60 - 12 + 2)."
+                "text": "If you want the frame centered at 57 inches, the frame is 24 inches tall, and the hanger drops 2 inches, the nail goes at 67 inches (57 + 12 - 2)."
               }
             }
           ]
@@ -70,297 +70,249 @@
 </head>
 
 <body>
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="topbar-brand">
+        <h1>Picture Hanger Height Calculator</h1>
+      </div>
+      <div class="topbar-controls">
+        <fieldset class="unit-toggle">
+          <legend class="sr-only">Measurement units</legend>
+          <div class="unit-toggle-options">
+            <span class="unit-radio">
+              <input type="radio" id="unit-in" name="unit-system" value="in" checked />
+              <label for="unit-in">IN</label>
+            </span>
+            <span class="unit-radio">
+              <input type="radio" id="unit-cm" name="unit-system" value="cm" />
+              <label for="unit-cm">CM</label>
+            </span>
+          </div>
+        </fieldset>
+        <button type="button" id="theme-toggle-btn" class="theme-cycle-btn" aria-label="Cycle color theme">
+          Theme: System
+        </button>
+      </div>
+    </div>
+  </header>
+
   <main class="app">
-    <header class="hero">
-      <div class="hero-header">
-        <h1>Picture Hanger Height Helper</h1>
-        <div class="hero-tools">
-          <fieldset class="unit-toggle">
-            <legend>Measurement units</legend>
-            <div class="unit-toggle-options">
-              <span class="unit-radio">
-                <input type="radio" id="unit-in" name="unit-system" value="in" checked />
-                <label for="unit-in">Inches</label>
-              </span>
-              <span class="unit-radio">
-                <input type="radio" id="unit-cm" name="unit-system" value="cm" />
-                <label for="unit-cm">Centimeters</label>
-              </span>
-            </div>
-          </fieldset>
-          <div class="theme-toggle">
-            <label for="theme-select">Theme</label>
-            <select id="theme-select" name="theme-select">
-              <option value="light">Light</option>
-              <option value="dark">Dark</option>
-              <option value="system">System default</option>
-            </select>
-          </div>
+    <section class="workbench" aria-label="Calculator">
+      <section class="spec-panel" aria-labelledby="measurements-title">
+        <div class="panel-header">
+          <h2 id="measurements-title">Measurements</h2>
+          <span class="panel-hint">Fractions or decimals (e.g. 30 1/2)</span>
         </div>
-        <p>Two quick measurements and you'll know exactly where the nail goes.</p>
-        <p class="hero-reference">
-          Need a step-by-step walkthrough?
-          <a href="https://www.nytimes.com/wirecutter/reviews/advice-how-to-hang-picture-frames/" target="_blank"
-            rel="noopener" aria-label="Wirecutter article: How to Hang Picture Frames (opens in a new tab)">
-            See the Wirecutter guide
-          </a>.
-        </p>
-      </div>
-    </header>
 
-    <section class="height-rule" aria-labelledby="height-rule-heading">
-      <p class="height-rule-tag" data-unit-copy data-unit-format="text"
-        data-unit-in="The 57–60 inch rule" data-unit-cm="The 145–152 centimeter rule">The 57–60 inch rule</p>
-      <h2 id="height-rule-heading">How high should I hang my frame?</h2>
-      <p data-unit-copy data-unit-format="html"
-        data-unit-in="Aim to keep the center of your artwork <strong>57&ndash;60 in</strong> above the finished floor&mdash;that falls right around average eye level, so pieces feel grounded without floating too high."
-        data-unit-cm="Aim to keep the center of your artwork <strong>145&ndash;152 cm</strong> above the finished floor&mdash;that falls right around average eye level, so pieces feel grounded without floating too high.">
-        Aim to keep the center of your artwork <strong>57–60 in</strong> above the finished floor—that falls right
-        around average eye level, so pieces feel grounded without floating too high.</p>
-      <ul class="height-rule-list">
-        <li data-unit-copy data-unit-format="text"
-          data-unit-in="Use a tape measure to mark 57–60 in from the floor; that mark is where the artwork center belongs."
-          data-unit-cm="Use a tape measure to mark 145–152 cm from the floor; that mark is where the artwork center belongs.">
-          Use a tape measure to mark 57–60 in from the floor; that mark is where the artwork center belongs.</li>
-        <li>Lean toward 60 in (152 cm) for large pieces or tall ceilings, and closer to 57 in (145 cm) in hallways or
-          when you want a cozier sightline.</li>
-        <li>Once the center height is set, plug your frame height and hanger drop into the calculator below to nail the
-          hook at the exact spot.</li>
-      </ul>
-      <p class="height-rule-note">Locking in that eye-level center first answers the “how high should I hang my frame?”
-        question, and the calculator handles the final nail height for you.</p>
-    </section>
-
-    <section class="measurements" aria-labelledby="measurements-title">
-      <h2 id="measurements-title" class="sr-only">Measurements</h2>
-      <article class="measurement-card">
-        <div class="measurement-card-header">
-          <h3>Target center height</h3>
-        </div>
-        <div class="measurement-figure" role="img" aria-labelledby="center-diagram-desc">
-          <div class="measurement-center">
-            <div class="measurement-figure-guide">
-              <span class="guide-cap"></span>
-              <span class="guide-line"></span>
-              <span class="guide-cap"></span>
-            </div>
-          </div>
-          <div class="measurement-wall-container">
-            <div class="measurement-figure-frame measurement-figure-frame--small"></div>
-          </div>
-        </div>
-        <p id="center-diagram-desc" class="sr-only">Diagram showing the wall with the desired artwork center height
-          marked.</p>
-        <label class="sr-only measurement-label" for="center-value">
-          Target center height (<span data-unit-copy data-unit-format="text" data-unit-in="inches"
-            data-unit-cm="centimeters">inches</span>)
-        </label>
-        <div class="input-shell measurement-input">
-          <input type="text" id="center-value" data-placeholder-in="60" data-placeholder-cm="150"
-            placeholder="60" autocomplete="off" />
-          <button type="button" class="unit-tag unit-tag--toggle" data-unit-copy data-unit-format="text"
-            data-unit-in="in" data-unit-cm="cm" data-unit-toggle>in</button>
-        </div>
-      </article>
-
-      <article class="measurement-card">
-        <div class="measurement-card-header">
-          <h3>Frame height</h3>
-        </div>
-        <div class="measurement-figure" role="img" aria-labelledby="frame-diagram-desc">
-          <div class="measurement-figure-frame"></div>
-          <div class="measurement-figure-guide">
-            <span class="guide-cap"></span>
-            <span class="guide-line"></span>
-            <span class="guide-cap"></span>
-          </div>
-        </div>
-        <p id="frame-diagram-desc" class="sr-only">Diagram showing the overall frame height measurement.</p>
-        <label class="sr-only measurement-label" for="frame-value">
-          Frame height (<span data-unit-copy data-unit-format="text" data-unit-in="inches"
-            data-unit-cm="centimeters">inches</span>)
-        </label>
-        <div class="input-shell measurement-input">
-          <input type="text" id="frame-value" data-placeholder-in="30 1/2" data-placeholder-cm="60"
-            placeholder="30 1/2" autocomplete="off" />
-          <button type="button" class="unit-tag unit-tag--toggle" data-unit-copy data-unit-format="text"
-            data-unit-in="in" data-unit-cm="cm" data-unit-toggle>in</button>
-        </div>
-      </article>
-
-      <article class="measurement-card">
-        <div class="measurement-card-header">
-          <h3>Anchor drop</h3>
-        </div>
-        <div class="measurement-figure" role="img" aria-labelledby="anchor-diagram-desc">
-          <div class="measurement-figure-frame">
-            <div class="measurement-anchor">
-              <div class="measurement-figure-guide">
-                <span class="guide-cap"></span>
-                <span class="guide-line"></span>
-                <span class="guide-cap"></span>
+        <div class="spec-rows">
+          <div class="spec-row">
+            <div class="spec-row-info">
+              <label class="spec-label" for="center-value">Target Center Height</label>
+              <p class="spec-desc" data-unit-copy data-unit-format="text"
+                data-unit-in="Floor to artwork center (57–60 in standard)"
+                data-unit-cm="Floor to artwork center (145–152 cm standard)">
+                Floor to artwork center (57–60 in standard)
+              </p>
+              <div class="quick-picks" role="group" aria-label="Common center heights">
+                <button type="button" class="quick-pick-btn" data-target="center-value" data-pick-in="57"
+                  data-pick-cm="145" data-unit-copy data-unit-format="text" data-unit-in='57" Hallway'
+                  data-unit-cm="145 cm Low">57" Hallway</button>
+                <button type="button" class="quick-pick-btn" data-target="center-value" data-pick-in="58 1/2"
+                  data-pick-cm="148" data-unit-copy data-unit-format="text" data-unit-in='58 1/2" Mid'
+                  data-unit-cm="148 cm Mid">58 1/2" Mid</button>
+                <button type="button" class="quick-pick-btn" data-target="center-value" data-pick-in="60"
+                  data-pick-cm="152" data-unit-copy data-unit-format="text" data-unit-in='60" Standard'
+                  data-unit-cm="152 cm Std">60" Standard</button>
               </div>
-              <div class="measurement-anchor-dot"></div>
+            </div>
+            <div class="spec-row-input">
+              <div class="input-shell measurement-input">
+                <input type="text" id="center-value" data-placeholder-in="60" data-placeholder-cm="150"
+                  placeholder="60" autocomplete="off" />
+                <button type="button" class="unit-tag unit-tag--toggle" data-unit-copy data-unit-format="text"
+                  data-unit-in="in" data-unit-cm="cm" data-unit-toggle>in</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="spec-row">
+            <div class="spec-row-info">
+              <label class="spec-label" for="frame-value">Frame Height</label>
+              <p class="spec-desc">Overall outside vertical height of the frame</p>
+            </div>
+            <div class="spec-row-input">
+              <div class="input-shell measurement-input">
+                <input type="text" id="frame-value" data-placeholder-in="30 1/2" data-placeholder-cm="60"
+                  placeholder="30 1/2" autocomplete="off" />
+                <button type="button" class="unit-tag unit-tag--toggle" data-unit-copy data-unit-format="text"
+                  data-unit-in="in" data-unit-cm="cm" data-unit-toggle>in</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="spec-row">
+            <div class="spec-row-info">
+              <label class="spec-label" for="anchor-value">Anchor Drop</label>
+              <p class="spec-desc">Top of frame down to taut wire peak or sawtooth</p>
+              <div class="quick-picks" role="group" aria-label="Common anchor drops">
+                <button type="button" class="quick-pick-btn" data-target="anchor-value" data-pick-in="1 1/2"
+                  data-pick-cm="4" data-unit-copy data-unit-format="text" data-unit-in='1 1/2"'
+                  data-unit-cm="4 cm">1 1/2"</button>
+                <button type="button" class="quick-pick-btn" data-target="anchor-value" data-pick-in="2"
+                  data-pick-cm="5" data-unit-copy data-unit-format="text" data-unit-in='2"'
+                  data-unit-cm="5 cm">2"</button>
+                <button type="button" class="quick-pick-btn" data-target="anchor-value" data-pick-in="2 1/2"
+                  data-pick-cm="6" data-unit-copy data-unit-format="text" data-unit-in='2 1/2"'
+                  data-unit-cm="6 cm">2 1/2"</button>
+                <button type="button" class="quick-pick-btn" data-target="anchor-value" data-pick-in="3"
+                  data-pick-cm="8" data-unit-copy data-unit-format="text" data-unit-in='3"'
+                  data-unit-cm="8 cm">3"</button>
+              </div>
+            </div>
+            <div class="spec-row-input">
+              <div class="input-shell measurement-input">
+                <input type="text" id="anchor-value" data-placeholder-in="2 1/4" data-placeholder-cm="5"
+                  placeholder="2 1/4" autocomplete="off" />
+                <button type="button" class="unit-tag unit-tag--toggle" data-unit-copy data-unit-format="text"
+                  data-unit-in="in" data-unit-cm="cm" data-unit-toggle>in</button>
+              </div>
             </div>
           </div>
         </div>
-        <p id="anchor-diagram-desc" class="sr-only">Diagram showing the hanger drop distance from the frame top to the
-          nail.</p>
-        <label class="sr-only measurement-label" for="anchor-value">
-          Anchor drop (<span data-unit-copy data-unit-format="text" data-unit-in="inches"
-            data-unit-cm="centimeters">inches</span>)
-        </label>
-        <div class="input-shell measurement-input">
-          <input type="text" id="anchor-value" data-placeholder-in="2 1/4" data-placeholder-cm="5"
-            placeholder="2 1/4" autocomplete="off" />
-          <button type="button" class="unit-tag unit-tag--toggle" data-unit-copy data-unit-format="text"
-            data-unit-in="in" data-unit-cm="cm" data-unit-toggle>in</button>
-        </div>
-      </article>
+      </section>
 
-      <div class="mobile-keypad" id="mobile-measurement-keypad" hidden aria-hidden="true">
-        <p class="mobile-keypad-label">Quick fraction keypad</p>
-        <div class="mobile-keypad-grid" role="group" aria-label="Fraction keypad">
-          <button type="button" class="mobile-keypad-key" data-value="1">1</button>
-          <button type="button" class="mobile-keypad-key" data-value="2">2</button>
-          <button type="button" class="mobile-keypad-key" data-value="3">3</button>
-          <button type="button" class="mobile-keypad-key mobile-keypad-key--icon" data-action="backspace"
-            aria-label="Delete character">⌫</button>
-          <button type="button" class="mobile-keypad-key" data-value="4">4</button>
-          <button type="button" class="mobile-keypad-key" data-value="5">5</button>
-          <button type="button" class="mobile-keypad-key" data-value="6">6</button>
-          <button type="button" class="mobile-keypad-key" data-value=".">.</button>
-          <button type="button" class="mobile-keypad-key" data-value="7">7</button>
-          <button type="button" class="mobile-keypad-key" data-value="8">8</button>
-          <button type="button" class="mobile-keypad-key" data-value="9">9</button>
-          <button type="button" class="mobile-keypad-key" data-value="/">/</button>
-          <button type="button" class="mobile-keypad-key mobile-keypad-key--wide" data-action="space"
-            aria-label="Insert space">Space</button>
-          <button type="button" class="mobile-keypad-key" data-value="0">0</button>
-          <button type="button" class="mobile-keypad-key" data-action="close" aria-label="Hide keypad">Done</button>
-        </div>
-      </div>
-    </section>
-
-    <section class="output-grid">
-      <div class="result-panel" aria-live="polite">
-        <div class="result-label">Nail height</div>
-        <div id="result-primary" class="result-value">Enter your measurements</div>
-        <p id="result-secondary" class="result-secondary">
-          We'll show the top and bottom of the frame once you add your numbers.
-        </p>
-      </div>
-      <aside class="presets-card" aria-labelledby="presets-title">
-        <div class="presets-header">
-          <h3 id="presets-title">Saved measurements</h3>
-          <button type="button" class="preset-new-button" id="preset-new">New</button>
-        </div>
-        <form id="preset-form" class="preset-form">
-          <input type="hidden" id="preset-id" />
-          <label class="preset-label" for="preset-name">Name</label>
-          <div class="preset-form-row">
-            <input type="text" id="preset-name" name="preset-name" autocomplete="off" placeholder="Gallery wall"
-              required />
-            <button type="submit" class="preset-save-button" id="preset-save">Save</button>
+      <section class="result-panel" aria-live="polite" aria-labelledby="result-heading">
+        <div class="result-body">
+          <div class="result-header">
+            <span id="result-heading" class="result-label">NAIL HEIGHT FROM FLOOR</span>
+            <button type="button" class="copy-result-btn" id="copy-result-btn" title="Copy nail height">Copy</button>
           </div>
-          <p class="preset-form-hint">Saves the current measurements under this name.</p>
-        </form>
-        <p class="preset-empty" id="preset-empty">No saved measurements yet.</p>
-        <div class="preset-undo" id="preset-undo" hidden>
-          <span id="preset-undo-message"></span>
-          <button type="button" class="preset-undo-button" id="preset-undo-button">Undo</button>
+          <div id="result-primary" class="result-value">Enter your measurements</div>
+          <p id="result-secondary" class="result-secondary">
+            We'll show the top and bottom of the frame once you add your numbers.
+          </p>
         </div>
-        <ul class="preset-list" id="preset-list" aria-live="polite"></ul>
-      </aside>
+
+        <div class="diagram-stage" aria-label="Scaled wall elevation">
+          <div class="diagram-wall">
+            <div id="nail-wire" class="diagram-wire" aria-hidden="true"></div>
+            <div id="frame-visual" class="diagram-frame">
+              <div class="diagram-frame-centerline" aria-hidden="true"></div>
+              <span id="top-label" class="diagram-tag diagram-tag--left diagram-tag--top">Top</span>
+              <span id="center-label" class="diagram-tag diagram-tag--left diagram-tag--center">Center</span>
+              <span id="bottom-label" class="diagram-tag diagram-tag--left diagram-tag--bottom">Bottom</span>
+              <span id="anchor-label" class="diagram-tag diagram-tag--right diagram-tag--anchor">Drop</span>
+            </div>
+            <div id="nail-mark" class="diagram-nail">
+              <span class="diagram-nail-dot" aria-hidden="true"></span>
+              <span id="nail-label" class="diagram-nail-label">Nail</span>
+            </div>
+            <div class="diagram-floor">
+              <span>0 FLOOR</span>
+            </div>
+          </div>
+        </div>
+      </section>
     </section>
 
-    <section class="faq-section" aria-labelledby="faq-heading">
-      <h2 id="faq-heading">How to use the Frame Hanging Height Calculator</h2>
-      <p>Set your desired center height from the floor, enter your frame height, and add the hanger offset (wire stretch
-        or sawtooth distance from the top). The result is the nail height from the floor.</p>
-
-      <h3>Worked example</h3>
-      <p data-unit-copy data-unit-format="html"
-        data-unit-in="For a 24×18 in frame with a wire offset of 2 in and a desired center height of 57 in: nail height = 57 + (24 / 2) − 2 = <strong>67 in</strong>."
-        data-unit-cm="For a 60×45 cm frame with a wire offset of 5 cm and a desired center height of 150 cm: nail height = 150 + (60 / 2) − 5 = <strong>175 cm</strong>.">
-        For a 24×18 in frame with a wire offset of 2 in and a desired center height of 57 in: nail height = 57 + (24 /
-        2) − 2 = <strong>67 in</strong>.</p>
-
-      <h3>FAQ</h3>
-      <details class="faq-item">
-        <summary data-unit-copy data-unit-format="text" data-unit-in="What is the 57-inch rule?"
-          data-unit-cm="What is the 145-centimeter rule?">What is the 57-inch rule?</summary>
-        <p data-unit-copy data-unit-format="html"
-          data-unit-in="It’s a common guideline that places the center of artwork around 57 inches from the floor, roughly average eye level. You can pick 57&ndash;60 inches depending on the space."
-          data-unit-cm="It’s a common guideline that places the center of artwork around 145 centimeters from the floor, roughly average eye level. You can pick 145&ndash;152 centimeters depending on the space.">
-          It’s a common guideline that places the center of artwork around 57 inches from the floor, roughly average eye
-          level. You can pick 57–60 inches depending on the space.</p>
-      </details>
-      <details class="faq-item">
-        <summary>Wire vs. sawtooth hangers</summary>
-        <p>Wire hangers have an offset because the wire stretches when hung; sawtooth hangers have a fixed distance from
-          the frame’s top. Use that distance as the offset value.</p>
-      </details>
-    </section>
-    <section class="recommended-tools" aria-labelledby="recommended-tools-title">
-      <div class="recommended-tools-header">
-        <div>
-          <h2 id="recommended-tools-title">Recommended Hanging Tools</h2>
-          <p class="recommended-tools-subtitle">A few inexpensive helpers that make measuring, leveling, and securing
-            frames easier.</p>
+    <aside class="presets-card" aria-labelledby="presets-title">
+      <div class="panel-header">
+        <h2 id="presets-title">Saved Measurements</h2>
+        <button type="button" class="preset-new-button" id="preset-new">New</button>
+      </div>
+      <form id="preset-form" class="preset-form">
+        <input type="hidden" id="preset-id" />
+        <div class="preset-form-row">
+          <label class="sr-only" for="preset-name">Measurement name</label>
+          <input type="text" id="preset-name" name="preset-name" autocomplete="off"
+            placeholder="e.g. Hallway 16x20 or Sofa Center" required />
+          <button type="submit" class="preset-save-button" id="preset-save">Save</button>
         </div>
-        <p class="recommended-tools-note">Hand-picked, used in real projects.</p>
+      </form>
+      <p class="preset-empty" id="preset-empty">No saved measurements yet. Save a frame spec above for quick recall.</p>
+      <div class="preset-undo" id="preset-undo" hidden>
+        <span id="preset-undo-message"></span>
+        <button type="button" class="preset-undo-button" id="preset-undo-button">Undo</button>
+      </div>
+      <ul class="preset-list" id="preset-list" aria-live="polite"></ul>
+    </aside>
+
+    <section class="reference-section" aria-labelledby="reference-heading">
+      <div class="panel-header">
+        <h2 id="reference-heading">Reference</h2>
+        <a class="reference-link"
+          href="https://www.nytimes.com/wirecutter/reviews/advice-how-to-hang-picture-frames/" target="_blank"
+          rel="noopener" aria-label="Wirecutter article: How to Hang Picture Frames (opens in a new tab)">
+          Wirecutter Hanging Guide &rarr;
+        </a>
+      </div>
+      <div class="reference-grid">
+        <div class="reference-block">
+          <h3>Formula</h3>
+          <p class="formula-code">Nail Height = Center + (Frame Height / 2) − Anchor Drop</p>
+          <p data-unit-copy data-unit-format="html"
+            data-unit-in="Example: 24 in tall frame, 2 in wire drop, 57 in center &rarr; 57 + 12 − 2 = <strong>67 in</strong>."
+            data-unit-cm="Example: 60 cm tall frame, 5 cm wire drop, 150 cm center &rarr; 150 + 30 − 5 = <strong>175 cm</strong>.">
+            Example: 24 in tall frame, 2 in wire drop, 57 in center &rarr; 57 + 12 − 2 = <strong>67 in</strong>.
+          </p>
+        </div>
+
+        <div class="reference-block">
+          <h3 data-unit-copy data-unit-format="text" data-unit-in="57–60 in Eye-Level Rule"
+            data-unit-cm="145–152 cm Eye-Level Rule">57–60 in Eye-Level Rule</h3>
+          <p data-unit-copy data-unit-format="html"
+            data-unit-in="Keep artwork center <strong>57–60 in</strong> off the finished floor. Use 57 in in hallways or low-ceiling rooms; use 60 in for large pieces or tall ceilings."
+            data-unit-cm="Keep artwork center <strong>145–152 cm</strong> off the finished floor. Use 145 cm in hallways or low-ceiling rooms; use 152 cm for large pieces or tall ceilings.">
+            Keep artwork center <strong>57–60 in</strong> off the finished floor. Use 57 in in hallways or low-ceiling
+            rooms; use 60 in for large pieces or tall ceilings.
+          </p>
+        </div>
+
+        <div class="reference-block">
+          <h3>Anchor Drop</h3>
+          <p><strong>Wire hangers:</strong> Pull the wire taut upward with a tape measure and measure from the peak to
+            the top edge of the frame.<br /><strong>Sawtooth / D-rings:</strong> Measure the fixed distance from the top
+            edge to the tooth or ring.</p>
+        </div>
       </div>
 
-      <div class="recommended-tools-grid">
-        <article class="tool-card">
-          <p class="tool-card-tag">Damage-free hanging</p>
-          <h3>Command Large Picture Hanging Strips</h3>
-          <p>Reliable strips that keep lighter frames steady without touching paint or plaster.</p>
-          <a class="tool-card-link" href="https://www.amazon.com/dp/B01N8P1XEU?tag=frameheigh-20" target="_blank"
-            rel="noopener sponsored nofollow" data-asin="B01N8P1XEU"
-            aria-label="Buy Command Large Picture Hanging Strips on Amazon (opens in a new tab)">
-            Shop on Amazon
-          </a>
-        </article>
-
-        <article class="tool-card">
-          <p class="tool-card-tag">Fast leveling</p>
-          <h3>Stanley 8″ Torpedo Level (42-294)</h3>
-          <p>Compact magnetic level with clear vials so you can align the frame and nail in a glance.</p>
-          <a class="tool-card-link" href="https://www.amazon.com/dp/B00002X2FD?tag=frameheigh-20" target="_blank"
-            rel="noopener sponsored nofollow" data-asin="B00002X2FD"
-            aria-label="Buy Stanley 8-inch Torpedo Level model 42-294 on Amazon (opens in a new tab)">
-            Shop on Amazon
-          </a>
-        </article>
-
-        <article class="tool-card">
-          <p class="tool-card-tag">Wire kits</p>
-          <h3>Picture Hanging Wire Kit</h3>
-          <p>Everything needed for heavier art: braided wire, D-rings, and ferrules in a single kit.</p>
-          <a class="tool-card-link" href="https://www.amazon.com/dp/B07RVLV6CY?tag=frameheigh-20" target="_blank"
-            rel="noopener sponsored nofollow" data-asin="B07RVLV6CY"
-            aria-label="Buy Picture Hanging Wire Kit on Amazon (opens in a new tab)">
-            Shop on Amazon
-          </a>
-        </article>
-
-        <article class="tool-card">
-          <p class="tool-card-tag">Secure anchors</p>
-          <h3>Drywall Anchors & Screws Assortment</h3>
-          <p>Assorted anchors cover anything from small frames to mirrors when a stud isn’t available.</p>
-          <a class="tool-card-link" href="https://www.amazon.com/dp/B08HDFNDRP?tag=frameheigh-20" target="_blank"
-            rel="noopener sponsored nofollow" data-asin="B08HDFNDRP"
-            aria-label="Buy Drywall Anchors and Screws Assortment on Amazon (opens in a new tab)">
-            Shop on Amazon
-          </a>
-        </article>
-      </div>
-
-      <p class="recommended-tools-disclaimer">As an Amazon Associate I earn from qualifying purchases.</p>
+      <details class="reference-faq">
+        <summary>How to hang a picture frame at eye level (FAQ)</summary>
+        <div class="reference-faq-body">
+          <p data-unit-copy data-unit-format="html"
+            data-unit-in="<strong>What is the 57-inch rule?</strong> Museums and galleries center artwork at 57–60 inches from the floor, which matches average human eye level. Use 57 inches for smaller rooms and hallways, or 60 inches for tall ceilings and large statement pieces."
+            data-unit-cm="<strong>What is the 145-centimeter rule?</strong> Museums and galleries center artwork at 145–152 centimeters from the floor, which matches average human eye level. Use 145 cm for smaller rooms and hallways, or 152 cm for tall ceilings and large statement pieces.">
+            <strong>What is the 57-inch rule?</strong> Museums and galleries center artwork at 57–60 inches from the floor, which matches average human eye level. Use 57 inches for smaller rooms and hallways, or 60 inches for tall ceilings and large statement pieces.
+          </p>
+          <p><strong>How does the calculator find nail height?</strong> It adds half of your frame height to your target center height to locate the top edge of the frame, then subtracts the anchor drop so the nail lands at the exact hanging point.</p>
+        </div>
+      </details>
     </section>
+
+    <div class="mobile-keypad" id="mobile-measurement-keypad" hidden aria-hidden="true">
+      <p class="mobile-keypad-label">Fraction keypad</p>
+      <div class="mobile-keypad-grid" role="group" aria-label="Fraction keypad">
+        <button type="button" class="mobile-keypad-key" data-value="1">1</button>
+        <button type="button" class="mobile-keypad-key" data-value="2">2</button>
+        <button type="button" class="mobile-keypad-key" data-value="3">3</button>
+        <button type="button" class="mobile-keypad-key mobile-keypad-key--icon" data-action="backspace"
+          aria-label="Delete character">⌫</button>
+        <button type="button" class="mobile-keypad-key" data-value="4">4</button>
+        <button type="button" class="mobile-keypad-key" data-value="5">5</button>
+        <button type="button" class="mobile-keypad-key" data-value="6">6</button>
+        <button type="button" class="mobile-keypad-key" data-value=".">.</button>
+        <button type="button" class="mobile-keypad-key" data-value="7">7</button>
+        <button type="button" class="mobile-keypad-key" data-value="8">8</button>
+        <button type="button" class="mobile-keypad-key" data-value="9">9</button>
+        <button type="button" class="mobile-keypad-key" data-value="/">/</button>
+        <button type="button" class="mobile-keypad-key mobile-keypad-key--wide" data-action="space"
+          aria-label="Insert space">Space</button>
+        <button type="button" class="mobile-keypad-key" data-value="0">0</button>
+        <button type="button" class="mobile-keypad-key" data-action="close" aria-label="Hide keypad">Done</button>
+      </div>
+    </div>
   </main>
+
   <script src="script.js"></script>
   <!-- 100% privacy-first analytics -->
   <script async src="https://scripts.simpleanalyticscdn.com/latest.js"></script>
