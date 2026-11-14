@@ -971,18 +971,27 @@ function getCursorIndexFromPointer(input, event) {
     return getCursorPosition(input);
   }
 
+  const value = input.value || "";
+  if (value.length === 0) {
+    return 0;
+  }
+
   const style = window.getComputedStyle(input);
   const rect = input.getBoundingClientRect();
   const paddingLeft = parseFloat(style.paddingLeft) || 0;
   const paddingRight = parseFloat(style.paddingRight) || 0;
   const contentWidth = Math.max(0, rect.width - paddingLeft - paddingRight);
-  let relativeX = event.clientX - rect.left - paddingLeft;
-  relativeX = Math.max(0, Math.min(relativeX, contentWidth));
+  const totalWidth = measureInputTextWidth(input, value);
 
-  const value = input.value || "";
-  if (value.length === 0) {
-    return 0;
+  let textStartOffset = 0;
+  if (style.textAlign === "right" || style.textAlign === "end") {
+    textStartOffset = Math.max(0, contentWidth - totalWidth);
+  } else if (style.textAlign === "center") {
+    textStartOffset = Math.max(0, (contentWidth - totalWidth) / 2);
   }
+
+  let relativeX = event.clientX - rect.left - paddingLeft - textStartOffset;
+  relativeX = Math.max(0, Math.min(relativeX, totalWidth));
 
   let widthAccumulator = 0;
   for (let index = 0; index < value.length; index += 1) {
@@ -1064,12 +1073,21 @@ function updateMobileCaretPosition(input) {
   const style = window.getComputedStyle(input);
   const paddingLeft = parseFloat(style.paddingLeft) || 0;
   const paddingRight = parseFloat(style.paddingRight) || 0;
+  const contentWidth = Math.max(0, inputRect.width - paddingLeft - paddingRight);
+  const totalWidth = measureInputTextWidth(input, input.value || "");
+
+  let textStartOffset = 0;
+  if (style.textAlign === "right" || style.textAlign === "end") {
+    textStartOffset = Math.max(0, contentWidth - totalWidth);
+  } else if (style.textAlign === "center") {
+    textStartOffset = Math.max(0, (contentWidth - totalWidth) / 2);
+  }
+
   const cursorIndex = getCursorPosition(input);
   const textBeforeCaret = input.value.slice(0, cursorIndex);
   const textWidth = measureInputTextWidth(input, textBeforeCaret);
-  const maxOffset = Math.max(0, inputRect.width - paddingRight - 2);
-  const offsetInsideInput = Math.max(0, Math.min(textWidth, maxOffset));
-  const leftPosition = inputRect.left - shellRect.left + paddingLeft + offsetInsideInput;
+  const caretOffset = Math.max(0, Math.min(textStartOffset + textWidth, contentWidth));
+  const leftPosition = inputRect.left - shellRect.left + paddingLeft + caretOffset;
   caret.style.left = `${leftPosition}px`;
 }
 
@@ -1116,24 +1134,26 @@ function parseInputs() {
   const frameValue = frameInput ? parseMeasurement(frameInput.value) : NaN;
   if (Number.isNaN(frameValue)) {
     return {
-      error: `Enter the frame height in ${labels.long} (you can use decimals or fractions like 30 1/2).`,
+      field: "frame",
+      error: `Enter a valid height in ${labels.long} (e.g. 30 1/2).`,
     };
   }
   if (frameValue <= 0) {
-    return { error: "Frame height must be greater than zero." };
+    return { field: "frame", error: "Must be greater than zero." };
   }
 
   const anchorValue = anchorInput ? parseMeasurement(anchorInput.value) : NaN;
   if (Number.isNaN(anchorValue)) {
     return {
-      error: `Enter the anchor distance in ${labels.long} (decimals or fractions are OK).`,
+      field: "anchor",
+      error: `Enter a valid drop in ${labels.long} (e.g. 2 1/4).`,
     };
   }
   if (anchorValue < 0) {
-    return { error: "Anchor distance can’t be negative." };
+    return { field: "anchor", error: "Can’t be negative." };
   }
   if (anchorValue > frameValue) {
-    return { error: "Anchor distance can’t be greater than the frame height." };
+    return { field: "anchor", error: "Can’t exceed frame height." };
   }
 
   const centerRaw = centerInput ? centerInput.value : "";
@@ -1144,13 +1164,14 @@ function parseInputs() {
     centerValue = parseMeasurement(centerRaw);
     if (Number.isNaN(centerValue)) {
       return {
-        error: `Enter the target center height in ${labels.long} (decimals or fractions are OK).`,
+        field: "center",
+        error: `Enter a valid height in ${labels.long} (e.g. 60).`,
       };
     }
   }
 
   if (centerValue <= 0) {
-    return { error: "Target center height must be greater than zero." };
+    return { field: "center", error: "Must be greater than zero." };
   }
 
   const frameHeightInches = convertToInches(frameValue, currentUnit);
@@ -1306,12 +1327,54 @@ function updateDiagram(
   }
 }
 
+const INPUT_ERROR_FIELDS = {
+  center: { input: centerInput, errorEl: document.getElementById("center-error") },
+  frame: { input: frameInput, errorEl: document.getElementById("frame-error") },
+  anchor: { input: anchorInput, errorEl: document.getElementById("anchor-error") },
+};
+
+function clearInputErrors() {
+  Object.values(INPUT_ERROR_FIELDS).forEach(({ input, errorEl }) => {
+    if (input) {
+      input.removeAttribute("aria-invalid");
+      const shell = input.closest(".input-shell");
+      if (shell) {
+        shell.classList.remove("is-error");
+      }
+    }
+    if (errorEl) {
+      errorEl.textContent = "";
+      errorEl.hidden = true;
+    }
+  });
+}
+
+function showInputError(field, message) {
+  const entry = INPUT_ERROR_FIELDS[field];
+  if (!entry) {
+    return;
+  }
+  if (entry.input) {
+    entry.input.setAttribute("aria-invalid", "true");
+    const shell = entry.input.closest(".input-shell");
+    if (shell) {
+      shell.classList.add("is-error");
+    }
+  }
+  if (entry.errorEl) {
+    entry.errorEl.textContent = message;
+    entry.errorEl.hidden = false;
+  }
+}
+
 function handleCalculate() {
-  const { error, frameHeight, anchor, centerHeight } = parseInputs();
+  clearInputErrors();
+  const { error, field, frameHeight, anchor, centerHeight } = parseInputs();
   if (error) {
-    resultValue.textContent = error;
-    resultValue.classList.add("is-error");
-    resultValue.classList.remove("is-placeholder");
+    showInputError(field, error);
+    resultValue.textContent = "—";
+    resultValue.classList.remove("is-error");
+    resultValue.classList.add("is-placeholder");
     if (resultSecondary) {
       resultSecondary.textContent = defaultSecondaryMessage;
     }
