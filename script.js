@@ -48,6 +48,9 @@ const presetUndoMessage = document.getElementById("preset-undo-message");
 const presetUndoButton = document.getElementById("preset-undo-button");
 const presetsCard = document.querySelector(".presets-card");
 const themeSelect = document.getElementById("theme-select");
+const themeToggleBtn = document.getElementById("theme-toggle-btn");
+const THEME_CYCLE_ORDER = ["system", "light", "dark"];
+const THEME_LABELS = { system: "System", light: "Light", dark: "Dark" };
 const UNIT_STORAGE_KEY = "picture-hanger-unit";
 const PRESET_STORAGE_KEY = "picture-hanger-presets";
 const THEME_STORAGE_KEY = "picture-hanger-theme";
@@ -99,6 +102,16 @@ function initThemeControls() {
     });
   }
 
+  if (themeToggleBtn) {
+    themeToggleBtn.addEventListener("click", () => {
+      const currentMode = document.documentElement.dataset.themeMode || "system";
+      const idx = THEME_CYCLE_ORDER.indexOf(currentMode);
+      const nextMode = THEME_CYCLE_ORDER[(idx + 1) % THEME_CYCLE_ORDER.length];
+      applyThemeMode(nextMode);
+      persistThemePreference(nextMode);
+    });
+  }
+
   if (systemColorScheme) {
     const handleSystemChange = () => {
       if (document.documentElement.dataset.themeMode === "system") {
@@ -122,6 +135,12 @@ function applyThemeMode(mode) {
 
   if (themeSelect && themeSelect.value !== mode) {
     themeSelect.value = mode;
+  }
+
+  if (themeToggleBtn) {
+    const label = THEME_LABELS[mode] || "System";
+    themeToggleBtn.textContent = `Theme: ${label}`;
+    themeToggleBtn.setAttribute("aria-label", `Color theme: ${label}. Click to switch.`);
   }
 }
 
@@ -1794,3 +1813,99 @@ function getStringOrFallback(raw, fallbackNumber, unit = UNITS.INCHES) {
   }
   return formatInputValue(fallbackNumber, unit);
 }
+
+function initQuickPicks() {
+  const buttons = document.querySelectorAll(".quick-pick-btn[data-target]");
+  if (!buttons.length) {
+    return;
+  }
+
+  const syncActiveStates = () => {
+    buttons.forEach((btn) => {
+      const targetEl = document.getElementById(btn.dataset.target);
+      if (!targetEl) {
+        return;
+      }
+      const pickValue = currentUnit === UNITS.CENTIMETERS ? btn.dataset.pickCm : btn.dataset.pickIn;
+      btn.classList.toggle("is-active", targetEl.value.trim() === pickValue);
+    });
+  };
+
+  buttons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const targetEl = document.getElementById(btn.dataset.target);
+      if (!targetEl) {
+        return;
+      }
+      const pickValue = currentUnit === UNITS.CENTIMETERS ? btn.dataset.pickCm : btn.dataset.pickIn;
+      if (pickValue !== undefined) {
+        targetEl.value = pickValue;
+        handleCalculate();
+        syncActiveStates();
+      }
+    });
+  });
+
+  [frameInput, anchorInput, centerInput].forEach((input) => {
+    if (input) {
+      input.addEventListener("input", syncActiveStates);
+    }
+  });
+
+  unitInputs.forEach((input) => {
+    if (input) {
+      input.addEventListener("change", syncActiveStates);
+    }
+  });
+
+  syncActiveStates();
+}
+
+function initCopyResultButton() {
+  const copyBtn = document.getElementById("copy-result-btn");
+  if (!copyBtn || !resultValue) {
+    return;
+  }
+
+  let resetTimer = null;
+
+  copyBtn.addEventListener("click", async () => {
+    if (resultValue.classList.contains("is-placeholder") || resultValue.classList.contains("is-error")) {
+      return;
+    }
+
+    const text = resultValue.textContent.trim();
+    if (!text) {
+      return;
+    }
+
+    try {
+      if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+        await navigator.clipboard.writeText(text);
+      } else {
+        const temp = document.createElement("textarea");
+        temp.value = text;
+        temp.setAttribute("readonly", "");
+        temp.style.position = "absolute";
+        temp.style.left = "-9999px";
+        document.body.appendChild(temp);
+        temp.select();
+        document.execCommand("copy");
+        document.body.removeChild(temp);
+      }
+
+      copyBtn.textContent = "Copied";
+      copyBtn.classList.add("is-copied");
+      clearTimeout(resetTimer);
+      resetTimer = setTimeout(() => {
+        copyBtn.textContent = "Copy";
+        copyBtn.classList.remove("is-copied");
+      }, 1500);
+    } catch (error) {
+      console.warn("Unable to copy result:", error);
+    }
+  });
+}
+
+initQuickPicks();
+initCopyResultButton();
