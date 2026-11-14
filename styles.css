@@ -16,6 +16,7 @@
   --nail-soft: #fff7ed;
   --danger: #b91c1c;
   --danger-soft: #fef2f2;
+  --selection-bg: rgba(0, 99, 56, 0.2);
   --radius: 3px;
   --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --font-mono: ui-monospace, "SFMono-Regular", Menlo, Monaco, Consolas, monospace;
@@ -39,6 +40,7 @@
   --nail-soft: rgba(251, 146, 60, 0.14);
   --danger: #ef4444;
   --danger-soft: rgba(239, 68, 68, 0.14);
+  --selection-bg: rgba(34, 160, 107, 0.32);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -60,6 +62,7 @@
     --nail-soft: rgba(251, 146, 60, 0.14);
     --danger: #ef4444;
     --danger-soft: rgba(239, 68, 68, 0.14);
+    --selection-bg: rgba(34, 160, 107, 0.32);
   }
 }
 
@@ -350,13 +353,15 @@ main.app {
   transition: border-color 120ms ease, box-shadow 120ms ease;
 }
 
-.input-shell:focus-within {
+.input-shell:focus-within,
+.input-shell.is-keypad-focused {
   border-color: var(--accent);
   box-shadow: 0 0 0 2px var(--accent-soft);
 }
 
 .input-shell.is-error,
-.input-shell.is-error:focus-within {
+.input-shell.is-error:focus-within,
+.input-shell.is-error.is-keypad-focused {
   border-color: var(--danger);
   box-shadow: 0 0 0 2px var(--danger-soft);
 }
@@ -373,7 +378,17 @@ main.app {
   display: none;
 }
 
+.input-field-wrap {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+}
+
 .input-shell input {
+  position: relative;
+  z-index: 1;
   width: 100%;
   min-width: 0;
   border: 0;
@@ -390,6 +405,11 @@ main.app {
   color: var(--muted);
   opacity: 0.6;
   font-weight: 400;
+}
+
+.input-shell input:focus::placeholder,
+.input-shell.is-keypad-focused input::placeholder {
+  opacity: 0;
 }
 
 .input-shell input:focus {
@@ -983,15 +1003,42 @@ main.app {
   grid-column: span 2;
 }
 
+.mobile-selection-pill {
+  position: absolute;
+  right: calc(0.65rem - 3px);
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 1px 3px;
+  border-radius: 2px;
+  background: var(--selection-bg);
+  color: transparent;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.05rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: pre;
+  pointer-events: none;
+  z-index: 0;
+  max-width: calc(100% - 0.8rem);
+  overflow: hidden;
+}
+
 .mobile-input-caret {
   position: absolute;
+  right: calc(0.65rem - 3px);
   top: 50%;
   transform: translateY(-50%);
   width: 2px;
   height: 1.2em;
   background: var(--accent);
   pointer-events: none;
+  z-index: 2;
   animation: caret-blink 1s steps(1) infinite;
+}
+
+.mobile-selection-pill[hidden],
+.mobile-input-caret[hidden] {
+  display: none;
 }
 
 @keyframes caret-blink {
